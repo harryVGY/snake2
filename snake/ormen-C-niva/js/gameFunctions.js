@@ -55,7 +55,7 @@ function drawSnake() {
     });
 }
 
-function drawgrid(){
+function drawgrid() {
     ctx.fillStyle = 'lightgray';
     for (let i = 0; i < canvasWidth; i += gridSize) {
         ctx.fillRect(i, 0, 1, canvasHeight);
@@ -91,7 +91,7 @@ function togglePause() {
         // Pause the game
         clearInterval(gameInterval);
         gameInterval = null;
-        
+
         // Draw pause overlay
         drawPauseOverlay();
     } else {
@@ -109,7 +109,7 @@ function drawPauseOverlay() {
     ctx.fillStyle = 'white';
     ctx.font = '30px Arial';
     ctx.textAlign = 'center';
-    ctx.fillText('Game Paused', canvasWidth/2, canvasHeight/2);
+    ctx.fillText('Game Paused', canvasWidth / 2, canvasHeight / 2);
 }
 
 // Hanterar tangenttryckningar för att ändra riktning
@@ -173,7 +173,7 @@ function gameOver(reason = '') {
 // Flyttar ormen i vald riktning och hanterar mat
 function moveSnake() {
     const head = { ...snake[0] };  // Kopierar nuvarande huvud
-    
+
     // Flyttar huvudet i vald riktning
     switch (direction) {
         case 'up': head.y -= gridSize; break;
@@ -181,21 +181,21 @@ function moveSnake() {
         case 'left': head.x -= gridSize; break;
         case 'right': head.x += gridSize; break;
     }
-    
+
     // Kontrollera kollision med väggar
     if (head.x < 0 || head.x >= canvasWidth || head.y < 0 || head.y >= canvasHeight) {
         gameOver('Hit the wall');
         return;
     }
-    
+
     // Kontrollera kollision med sig själv
     if (isPositionOnSnake(head.x, head.y)) {
         gameOver('Hit yourself');
         return;
     }
-    
+
     snake.unshift(head);  // Lägger till nytt huvud i början
-    
+
     // Om ormen äter mat: öka poäng och placera ny mat
     if (head.x === food.x && head.y === food.y) {
         score++;
