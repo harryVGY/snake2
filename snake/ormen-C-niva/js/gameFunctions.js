@@ -16,6 +16,7 @@ function initGame() {
         snake.push({ x: startX - i * gridSize, y: startY });
     }
     placeFood();
+    placeObstacles(10); // Placera 10 hinder på banan
     score = 0;
     updateCanvas();
 }
@@ -25,13 +26,13 @@ function isPositionOnSnake(x, y) {
     return snake.some(segment => segment.x === x && segment.y === y);
 }
 
-// Placerar maten på en position som inte är på ormen
+// Placerar maten på en position som inte är på ormen eller hinder
 function placeFood() {
     let newX, newY;
     do {
         newX = Math.floor(Math.random() * (canvasWidth / gridSize)) * gridSize;
         newY = Math.floor(Math.random() * (canvasHeight / gridSize)) * gridSize;
-    } while (isPositionOnSnake(newX, newY));
+    } while (isPositionOnSnake(newX, newY) || isPositionOnObstacle(newX, newY));
 
     food.x = newX;
     food.y = newY;
@@ -41,9 +42,10 @@ function placeFood() {
 // Uppdaterar canvas med aktuell spelstatus
 function updateCanvas() {
     ctx.clearRect(0, 0, canvasWidth, canvasHeight);
+    drawgrid();
+    drawObstacles(); // Lägg till denna rad för att rita hindren
     drawSnake();
     drawFood();
-    drawgrid();
     document.getElementById('score').innerText = `Score: ${score}`;
 }
 
@@ -194,6 +196,12 @@ function moveSnake() {
         return;
     }
 
+    // Kontrollera kollision med hinder
+    if (isPositionOnObstacle(head.x, head.y)) {
+        gameOver('Hit an obstacle');
+        return;
+    }
+
     snake.unshift(head);  // Lägger till nytt huvud i början
 
     // Om ormen äter mat: öka poäng och placera ny mat
@@ -203,6 +211,65 @@ function moveSnake() {
     } else {
         snake.pop();  // Tar bort svansen om ingen mat äts
     }
+}
+// Kontrollerar om en position ligger på ett hinder
+function isPositionOnObstacle(x, y) {
+    return obstacles.some(obstacle => obstacle.x === x && obstacle.y === y);
+}
+
+// Placerar hinder på banan (ej på ormen, maten eller andra hinder)
+function placeObstacles(count = 10) {
+    // Rensa befintliga hinder
+    obstacles = [];
+
+    // Placera nya hinder
+    for (let i = 0; i < count; i++) {
+        let newX, newY;
+        let validPosition = false;
+
+        // Försök hitta en giltig position
+        let attempts = 0;
+        while (!validPosition && attempts < 100) {
+            newX = Math.floor(Math.random() * (canvasWidth / gridSize)) * gridSize;
+            newY = Math.floor(Math.random() * (canvasHeight / gridSize)) * gridSize;
+
+            // Kontrollera om positionen är giltig (inte på ormen, maten eller annat hinder)
+            validPosition = !isPositionOnSnake(newX, newY) &&
+                            !(food.x === newX && food.y === newY) &&
+                            !isPositionOnObstacle(newX, newY);
+
+            attempts++;
+        }
+
+        if (validPosition) {
+            // Lägg till nytt hinder
+            obstacles.push({ x: newX, y: newY });
+        }
+    }
+}
+
+// Rita hindren på spelplanen
+function drawObstacles() {
+    ctx.fillStyle = '#8B4513'; // Brun färg för hinder
+    obstacles.forEach(obstacle => {
+        ctx.fillRect(obstacle.x, obstacle.y, gridSize, gridSize);
+
+        // Lägg till en textur på hindren
+        ctx.strokeStyle = '#663300';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(obstacle.x, obstacle.y, gridSize, gridSize);
+
+        // Rita några linjer för att simulera trätextur
+        ctx.beginPath();
+        ctx.moveTo(obstacle.x, obstacle.y);
+        ctx.lineTo(obstacle.x + gridSize, obstacle.y + gridSize);
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.moveTo(obstacle.x + gridSize, obstacle.y);
+        ctx.lineTo(obstacle.x, obstacle.y + gridSize);
+        ctx.stroke();
+    });
 }
 
 
