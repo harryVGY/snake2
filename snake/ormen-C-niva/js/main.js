@@ -28,34 +28,13 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('startBtn').innerText = 'Reset';
     });
 
-    // Event listener för paus-knapp - pausar eller fortsätter spelet
-document.getElementById('pauseBtn').addEventListener('click', () => {
-    if (isPaused) {
-        // Fortsätt spelet
-        gameInterval = setInterval(gameLoop, gameSpeed);
-        isPaused = false;
-        document.getElementById('pauseBtn').innerText = 'Pause';
-    } else {
-        // Om spelet inte körs alls, gör ingenting
-        if (!gameInterval) {
-            return;
+    // Event listener för paus-knapp
+    document.getElementById('pauseBtn').addEventListener('click', () => {
+        // Only allow pausing if the game is running
+        if (gameInterval || isPaused) {
+            togglePause();
         }
-        
-        // Pausa spelet
-        clearInterval(gameInterval);
-        gameInterval = null;
-        isPaused = true;
-        document.getElementById('pauseBtn').innerText = 'Resume';
-
-        // Visa pausmeddelande
-        ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
-        ctx.fillRect(0, 0, canvasWidth, canvasHeight);
-        ctx.fillStyle = 'white';
-        ctx.font = '30px Arial';
-        ctx.textAlign = 'center';
-        ctx.fillText('Game Paused', canvasWidth/2, canvasHeight/2);
-    }
-});
+    });
 
     // Event listener för tangenttryckningar
     document.addEventListener('keydown', changeDirection);

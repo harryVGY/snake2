@@ -2,7 +2,7 @@
 function initGame() {
     // Hide the game over message
     document.getElementById('gameMessage').style.display = 'none';
-    
+
     snake = [];
     // Återställ riktningsvariablerna till startläge
     // för att fixa bugg där du dör direkt om du startar om spelet
@@ -43,6 +43,7 @@ function updateCanvas() {
     ctx.clearRect(0, 0, canvasWidth, canvasHeight);
     drawSnake();
     drawFood();
+    drawgrid();
     document.getElementById('score').innerText = `Score: ${score}`;
 }
 
@@ -52,6 +53,16 @@ function drawSnake() {
         ctx.fillStyle = index === 0 ? 'darkgreen' : 'green';
         ctx.fillRect(segment.x, segment.y, gridSize, gridSize);
     });
+}
+
+function drawgrid(){
+    ctx.fillStyle = 'lightgray';
+    for (let i = 0; i < canvasWidth; i += gridSize) {
+        ctx.fillRect(i, 0, 1, canvasHeight);
+    }
+    for (let i = 0; i < canvasHeight; i += gridSize) {
+        ctx.fillRect(0, i, canvasWidth, 1);
+    }
 }
 
 // Ritar maten med bild eller en röd fallback-fyrkant
@@ -68,6 +79,37 @@ function drawFood() {
     } catch (error) {
         console.error("Error drawing food:", error);
     }
+}
+
+
+// Add this function to handle pausing and resuming the game
+function togglePause() {
+    isPaused = !isPaused;
+    document.getElementById('pauseBtn').innerText = isPaused ? 'Resume' : 'Pause';
+
+    if (isPaused) {
+        // Pause the game
+        clearInterval(gameInterval);
+        gameInterval = null;
+        
+        // Draw pause overlay
+        drawPauseOverlay();
+    } else {
+        // Resume the game
+        if (!gameInterval) {
+            gameInterval = setInterval(gameLoop, gameSpeed);
+        }
+    }
+}
+
+// paus meddelande
+function drawPauseOverlay() {
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+    ctx.fillRect(0, 0, canvasWidth, canvasHeight);
+    ctx.fillStyle = 'white';
+    ctx.font = '30px Arial';
+    ctx.textAlign = 'center';
+    ctx.fillText('Game Paused', canvasWidth/2, canvasHeight/2);
 }
 
 // Hanterar tangenttryckningar för att ändra riktning
@@ -93,50 +135,11 @@ function changeDirection(event) {
         case 'D':
             if (direction !== 'left') nextDirection = 'right';
             break;
-    }
-}
-
-
-// Flyttar ormen och kontrollerar kollisioner
-function moveSnake() {
-    const head = { ...snake[0] };
-    switch (direction) {
-        case 'up':
-            head.y -= gridSize;
+        case 'Escape':
+            if (typeof isPaused !== 'undefined') {
+                togglePause();
+            }
             break;
-        case 'down':
-            head.y += gridSize;
-            break;
-        case 'left':
-            head.x -= gridSize;
-            break;
-        case 'right':
-            head.x += gridSize;
-            break;
-    }
-
-    // Kontrollera kollision med kanterna
-    if (head.x < 0 || head.x >= canvasWidth || head.y < 0 || head.y >= canvasHeight) {
-        let deathReason = 'Hit the wall';
-        gameOver(deathReason);
-        return;
-    }
-
-// Kontrollera kollision med sig själv (börja på index 1 för att undvika huvudet)
-for (let i = 1; i < snake.length; i++) {
-    if (head.x === snake[i].x && head.y === snake[i].y) {
-        let deathReason = 'Hit yourself';
-        gameOver(deathReason);
-        return;
-    }
-}
-
-    snake.unshift(head);
-    if (head.x === food.x && head.y === food.y) {
-        score++;
-        placeFood();
-    } else {
-        snake.pop();
     }
 }
 // Hanterar Game Over
@@ -144,20 +147,18 @@ function gameOver(reason = '') {
     clearInterval(gameInterval);
     gameInterval = null;
 
-    // Get the message div
     const messageDiv = document.getElementById('gameMessage');
-    
-    // Create the HTML content for the game over message
+
     messageDiv.innerHTML = `
         <h2>Game Over</h2>
         <p>Final Score: ${score}</p>
         ${reason ? `<p>Reason: ${reason}</p>` : ''}
         <p>Click Start to play again</p>
     `;
-    
+
     // Show the message div
     messageDiv.style.display = 'block';
-    
+
     // Update button states
     document.getElementById('startBtn').innerText = 'Start';
     document.getElementById('pauseBtn').disabled = true;
@@ -166,6 +167,41 @@ function gameOver(reason = '') {
     // Reset pause state
     if (typeof isPaused !== 'undefined') {
         isPaused = false;
+    }
+}
+
+// Flyttar ormen i vald riktning och hanterar mat
+function moveSnake() {
+    const head = { ...snake[0] };  // Kopierar nuvarande huvud
+    
+    // Flyttar huvudet i vald riktning
+    switch (direction) {
+        case 'up': head.y -= gridSize; break;
+        case 'down': head.y += gridSize; break;
+        case 'left': head.x -= gridSize; break;
+        case 'right': head.x += gridSize; break;
+    }
+    
+    // Kontrollera kollision med väggar
+    if (head.x < 0 || head.x >= canvasWidth || head.y < 0 || head.y >= canvasHeight) {
+        gameOver('Hit the wall');
+        return;
+    }
+    
+    // Kontrollera kollision med sig själv
+    if (isPositionOnSnake(head.x, head.y)) {
+        gameOver('Hit yourself');
+        return;
+    }
+    
+    snake.unshift(head);  // Lägger till nytt huvud i början
+    
+    // Om ormen äter mat: öka poäng och placera ny mat
+    if (head.x === food.x && head.y === food.y) {
+        score++;
+        placeFood();
+    } else {
+        snake.pop();  // Tar bort svansen om ingen mat äts
     }
 }
 
