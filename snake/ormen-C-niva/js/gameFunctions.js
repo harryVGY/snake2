@@ -52,7 +52,7 @@ function updateCanvas() {
 // Ritar ormen med mörkgrönt huvud och grön kropp
 function drawSnake() {
     snake.forEach((segment, index) => {
-        ctx.fillStyle = index === 0 ? 'darkgreen' : 'green';
+        ctx.fillStyle = index === 0 ? 'darkgreen': 'green';
         ctx.fillRect(segment.x, segment.y, gridSize, gridSize);
     });
 }
