@@ -13,7 +13,7 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
     }
 
-    // Event listener för start/reset-knapp - startar alltid ett nytt spel
+    // Event listener för start/reset-knapp
     document.getElementById('startBtn').addEventListener('click', () => {
         console.log("Start button clicked");
         // Oavsett om spelet körs eller är pausat, starta ett nytt spel
@@ -26,6 +26,9 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('pauseBtn').innerText = 'Pause';
         document.getElementById('pauseBtn').disabled = false;
 
+        // Update settings before starting game
+        updateSettingsFromUI();
+        
         initGame();
         gameInterval = setInterval(gameLoop, gameSpeed);
         document.getElementById('startBtn').innerText = 'Reset';
@@ -33,7 +36,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Event listener för paus-knapp
     document.getElementById('pauseBtn').addEventListener('click', () => {
-        // Existing code...
+        // Only allow pausing if the game is running
+        if (gameInterval || isPaused) {
+            togglePause();
+        }
     });
 
     // Event listener för tangenttryckningar
@@ -51,13 +57,48 @@ document.addEventListener('DOMContentLoaded', () => {
             gridSizeValue.textContent = this.value;
             updateGridSize(parseInt(this.value));
         });
-        
-        // Only allow changing grid size when game is not running
-        gridSlider.addEventListener('change', function() {
+    }
+    
+    // Setup obstacles toggle
+    const obstaclesToggle = document.getElementById('obstaclesToggle');
+    if (obstaclesToggle) {
+        obstaclesToggle.addEventListener('change', function() {
+            obstaclesEnabled = this.checked;
             if (!gameInterval) {
-                // Redraw start screen code...
+                // If game is not running, update UI immediately
+                if (obstaclesEnabled) {
+                    placeObstacles(10);
+                } else {
+                    obstacles = [];
+                }
+                updateCanvas();
             }
         });
+        
+        // Set initial value from HTML
+        obstaclesEnabled = obstaclesToggle.checked;
+    }
+    
+    // Setup food count slider
+    const foodSlider = document.getElementById('foodCountSlider');
+    const foodCountValue = document.getElementById('foodCountValue');
+    
+    if (foodSlider && foodCountValue) {
+        foodSlider.addEventListener('input', function() {
+            foodCountValue.textContent = this.value;
+            foodCount = parseInt(this.value);
+            console.log("Food count updated to:", foodCount);
+            
+            if (!gameInterval) {
+                // If game is not running, update UI immediately
+                placeFood();
+                updateCanvas();
+            }
+        });
+        
+        // Set initial value from HTML
+        foodCount = parseInt(foodSlider.value);
+        foodCountValue.textContent = foodCount;
     }
 
     // Visa startskärmen
@@ -69,6 +110,22 @@ document.addEventListener('DOMContentLoaded', () => {
     ctx.fillText('Press Start to begin', canvasWidth/2, canvasHeight/2);
     ctx.fillText('Use arrow keys or WASD to control', canvasWidth/2, canvasHeight/2 + 30);
 });
+
+// Function to update settings from UI controls
+function updateSettingsFromUI() {
+    // Update obstacles setting
+    const obstaclesToggle = document.getElementById('obstaclesToggle');
+    if (obstaclesToggle) {
+        obstaclesEnabled = obstaclesToggle.checked;
+    }
+    
+    // Update food count setting
+    const foodSlider = document.getElementById('foodCountSlider');
+    if (foodSlider) {
+        foodCount = parseInt(foodSlider.value);
+        console.log("Starting game with food count:", foodCount);
+    }
+}
 
 // Function to update grid size
 function updateGridSize(newSize) {
@@ -84,6 +141,10 @@ function updateGridSize(newSize) {
         document.getElementById('pauseBtn').innerText = 'Pause';
         document.getElementById('pauseBtn').disabled = false;
         document.getElementById('startBtn').innerText = 'Reset';
+        
+        // Update settings before starting game
+        updateSettingsFromUI();
+        
         initGame();
         gameInterval = setInterval(gameLoop, gameSpeed);
     }

@@ -10,8 +10,12 @@ let snake = [];
 let initialSnakeLength = 3;
 let direction = 'right';
 let nextDirection = direction;
-let food = { x: 0, y: 0, image: null };
+let food = [{ x: 0, y: 0, image: null }]; // Changed to array to support multiple food items
 let score = 0;
 let gameSpeed = 100; // uppdateringar per sekund, högre är långsammare
 let gameInterval = null;
 let obstacles = []; // Array för att hålla alla hinder
+
+// Game settings
+let obstaclesEnabled = true;
+let foodCount = 1;

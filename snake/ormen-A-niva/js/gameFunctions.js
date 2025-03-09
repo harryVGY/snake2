@@ -27,24 +27,43 @@ function isPositionOnSnake(x, y) {
 }
 
 // Placerar maten på en position som inte är på ormen eller hinder
+// Placerar maten på en position som inte är på ormen eller hinder
 function placeFood() {
-    let newX, newY;
-    do {
-        newX = Math.floor(Math.random() * (canvasWidth / gridSize)) * gridSize;
-        newY = Math.floor(Math.random() * (canvasHeight / gridSize)) * gridSize;
-    } while (isPositionOnSnake(newX, newY) || isPositionOnObstacle(newX, newY));
+    // Clear existing food array
+    food = [];
+    console.log("Placing food, count:", foodCount);
 
-    food.x = newX;
-    food.y = newY;
-    
-    try {
-        food.image = randomizeFruit();
-    } catch (error) {
-        console.error("Error in randomizeFruit:", error);
-        // Create a fallback red square
-        ctx.fillStyle = 'red';
-        ctx.fillRect(food.x, food.y, gridSize, gridSize);
+    // Add the specified number of food items
+    for (let i = 0; i < foodCount; i++) {
+        let newX, newY;
+        let validPosition = false;
+        let attempts = 0;
+
+        while (!validPosition && attempts < 100) {
+            newX = Math.floor(Math.random() * (canvasWidth / gridSize)) * gridSize;
+            newY = Math.floor(Math.random() * (canvasHeight / gridSize)) * gridSize;
+
+            // Check if position doesn't overlap with snake, obstacles or other food
+            validPosition = !isPositionOnSnake(newX, newY) &&
+                            !isPositionOnObstacle(newX, newY) &&
+                            !isPositionOnFood(newX, newY);
+
+            attempts++;
+        }
+
+        if (validPosition) {
+            food.push({
+                x: newX,
+                y: newY,
+                image: randomizeFruit()
+            });
+        }
     }
+}
+
+// Check if a position has food on it
+function isPositionOnFood(x, y) {
+    return food.some(item => item.x === x && item.y === y);
 }
 
 // Uppdaterar canvas med aktuell spelstatus
@@ -56,25 +75,25 @@ function updateCanvas() {
     drawFood();
     document.getElementById('score').innerText = `Score: ${score}`;
 }
-// Ritar maten med bild eller en röd fallback-fyrkant
+// Draw all food items
 function drawFood() {
     try {
-        if (food.image && food.image.complete && food.image.naturalWidth !== 0) {
-            ctx.drawImage(food.image, food.x, food.y, gridSize, gridSize);
-        } else {
-            // Fallback to colored rectangle if image not loaded
-            ctx.fillStyle = 'red';
-            ctx.fillRect(food.x, food.y, gridSize, gridSize);
-            
-            // Add a border
-            ctx.strokeStyle = 'white';
-            ctx.lineWidth = 1;
-            ctx.strokeRect(food.x + 1, food.y + 1, gridSize - 2, gridSize - 2);
-        }
+        food.forEach(item => {
+            if (item.image && item.image.complete && item.image.naturalWidth !== 0) {
+                ctx.drawImage(item.image, item.x, item.y, gridSize, gridSize);
+            } else {
+                // Fallback to colored rectangle if image not loaded
+                ctx.fillStyle = 'red';
+                ctx.fillRect(item.x, item.y, gridSize, gridSize);
+
+                // Add a border
+                ctx.strokeStyle = 'white';
+                ctx.lineWidth = 1;
+                ctx.strokeRect(item.x + 1, item.y + 1, gridSize - 2, gridSize - 2);
+            }
+        });
     } catch (error) {
         console.error("Error drawing food:", error);
-        ctx.fillStyle = 'red';
-        ctx.fillRect(food.x, food.y, gridSize, gridSize);
     }
 }
 
@@ -98,23 +117,120 @@ function drawSnake() {
     });
 }
 
-// Function to draw body segments with proper rotation
 function drawBodySegment(segment, index) {
-    // Temporary simplified version for testing
-    ctx.fillStyle = 'green';
-    ctx.fillRect(segment.x, segment.y, gridSize, gridSize);
-    
-    // Draw a simple indicator for direction
-    ctx.fillStyle = 'lightgreen';
-    ctx.fillRect(segment.x + gridSize/4, segment.y + gridSize/4, gridSize/2, gridSize/2);
-    
-    /* 
-    // Your original complex rotation code has been commented out
-    // You can restore it once the basic game works
-    const prev = snake[index - 1]; 
+    // Get previous and next segments to determine rotation
+    const prev = snake[index - 1];
     const next = snake[index + 1];
-    // Rest of your rotation code...
-    */
+
+    // If there's no previous or next (e.g. very short snake), just draw a square
+    if (!prev || !next) {
+        ctx.fillStyle = 'green';
+        ctx.fillRect(segment.x, segment.y, gridSize, gridSize);
+        return;
+    }
+
+    // Check if snake_body image is loaded
+    if (typeof snakeBodyImage !== 'undefined' && 
+        snakeBodyImage.complete && 
+        snakeBodyImage.naturalWidth !== 0) 
+    {
+        // Save the current canvas state
+        ctx.save();
+
+        // Move to the center of the segment (so rotations pivot correctly)
+        ctx.translate(segment.x + gridSize / 2, segment.y + gridSize / 2);
+
+        let angle = 0;
+
+        // Calculate direction vectors
+        const prevToCurrent = {
+            x: segment.x - prev.x,
+            y: segment.y - prev.y
+        };
+        const currentToNext = {
+            x: next.x - segment.x,
+            y: next.y - segment.y
+        };
+
+        // 1) If snake is moving straight horizontally
+        if (prevToCurrent.x !== 0 && currentToNext.x !== 0) {
+            // Horizontal
+            angle = 0; 
+        }
+        // 2) If snake is moving straight vertically
+        else if (prevToCurrent.y !== 0 && currentToNext.y !== 0) {
+            // Vertical
+            angle = Math.PI / 2; 
+        }
+        // 3) Otherwise, the snake is turning
+        else {
+            // up->right OR left->down
+            if ((prevToCurrent.y < 0 && currentToNext.x > 0) ||
+                (prevToCurrent.x < 0 && currentToNext.y > 0)) {
+                angle = 0;
+            }
+            // up->left OR right->down
+            else if ((prevToCurrent.y < 0 && currentToNext.x < 0) ||
+                     (prevToCurrent.x > 0 && currentToNext.y > 0)) {
+                angle = Math.PI / 2;  // 90°
+            }
+            // down->right OR left->up
+            else if ((prevToCurrent.y > 0 && currentToNext.x > 0) ||
+                     (prevToCurrent.x < 0 && currentToNext.y < 0)) {
+                angle = -Math.PI / 2; // -90°
+            }
+            // down->left OR right->up
+            else if ((prevToCurrent.y > 0 && currentToNext.x < 0) ||
+                     (prevToCurrent.x > 0 && currentToNext.y < 0)) {
+                angle = Math.PI;      // 180°
+            }
+        }
+
+        // Rotate the canvas for the segment
+        ctx.rotate(angle);
+
+        // Draw the body image so it fits exactly in the grid
+        ctx.drawImage(
+            snakeBodyImage,
+            -gridSize / 2,
+            -gridSize / 2,
+            gridSize,
+            gridSize
+        );
+
+        // Restore the canvas state
+        ctx.restore();
+    } else {
+        // Fallback if the image isn't loaded: just draw a green square
+        ctx.fillStyle = 'green';
+        ctx.fillRect(segment.x, segment.y, gridSize, gridSize);
+
+        // A small lighter square inside, for a bit of "texture"
+        ctx.fillStyle = 'lightgreen';
+        ctx.fillRect(
+            segment.x + gridSize / 4,
+            segment.y + gridSize / 4,
+            gridSize / 2,
+            gridSize / 2
+        );
+    }
+}
+
+// Add this helper function for determining segment type
+function getSegmentType(prev, current, next) {
+    if (!prev || !next) return 'straight';
+
+    const dx1 = current.x - prev.x;
+    const dy1 = current.y - prev.y;
+    const dx2 = next.x - current.x;
+    const dy2 = next.y - current.y;
+
+    // If direction changes, it's a turn
+    if ((dx1 !== 0 && dy2 !== 0) || (dy1 !== 0 && dx2 !== 0)) {
+        return 'turn';
+    }
+
+    return 'straight';
 }
 
 
@@ -231,42 +347,71 @@ function moveSnake() {
     }
 
     // Kontrollera kollision med hinder
-    if (isPositionOnObstacle(head.x, head.y)) {
+    if (obstaclesEnabled && isPositionOnObstacle(head.x, head.y)) {
         gameOver('Hit an obstacle');
         return;
     }
 
     snake.unshift(head);  // Lägger till nytt huvud i början
 
-    // Om ormen äter mat: öka poäng och placera ny mat
-    if (head.x === food.x && head.y === food.y) {
+    // Check if snake head is on any food item
+    let foodEaten = false;
+    let foodIndex = -1;
+
+    for (let i = 0; i < food.length; i++) {
+        if (head.x === food[i].x && head.y === food[i].y) {
+            foodEaten = true;
+            foodIndex = i;
+            break;
+        }
+    }
+
+    if (foodEaten) {
+        // Remove the eaten food
+        food.splice(foodIndex, 1);
         score++;
-        placeFood();
+
+        // If all food is eaten, place new food
+        if (food.length === 0) {
+            placeFood();
+        }
     } else {
         snake.pop();  // Tar bort svansen om ingen mat äts
     }
 }
+
 // Kontrollerar om en position ligger på ett hinder
 function isPositionOnObstacle(x, y) {
     return obstacles.some(obstacle => obstacle.x === x && obstacle.y === y);
 }
 
-// Debug function to show game state - add this at the end of the file
-function debugGame() {
-    console.log("Game State:", {
-        snake: snake.length > 0 ? snake[0] : "No snake",
-        direction,
-        nextDirection,
-        isPaused,
-        gameInterval: gameInterval ? "Running" : "Stopped",
-        food
-    });
-}
 
 // Placerar hinder på banan (ej på ormen, maten eller andra hinder)
 function placeObstacles(count = 10) {
     // Rensa befintliga hinder
     obstacles = [];
+
+    // Skip obstacle placement if disabled
+    if (!obstaclesEnabled) {
+        return;
+    }
+
+    // Define a safety zone in front of the snake
+    const safeZoneSize = 3; // Number of grid cells to keep clear
+    const safePositions = [];
+
+    // Get snake head position
+    const head = snake[0];
+
+    // Add positions in front of the snake to safe zone
+    // Initial direction is 'right', so protect spaces to the right
+    for (let i = 1; i <= safeZoneSize; i++) {
+        safePositions.push({
+            x: head.x + (i * gridSize),
+            y: head.y + (i * gridSize),
+            y: head.y - (i * gridSize)
+        });
+    }
 
     // Placera nya hinder
     for (let i = 0; i < count; i++) {
@@ -275,14 +420,15 @@ function placeObstacles(count = 10) {
 
         // Försök hitta en giltig position
         let attempts = 0;
-        while (!validPosition && attempts < 100) {
+        while (!validPosition && attempts < (canvasWidth * canvasHeight)/gridSize) {
             newX = Math.floor(Math.random() * (canvasWidth / gridSize)) * gridSize;
             newY = Math.floor(Math.random() * (canvasHeight / gridSize)) * gridSize;
 
-            // Kontrollera om positionen är giltig (inte på ormen, maten eller annat hinder)
+            // Kontrollera om positionen är giltig (inte på ormen, maten, annat hinder eller säkerhetszonen)
             validPosition = !isPositionOnSnake(newX, newY) &&
-                            !(food.x === newX && food.y === newY) &&
-                            !isPositionOnObstacle(newX, newY);
+                            !isPositionOnFood(newX, newY) &&
+                            !isPositionOnObstacle(newX, newY) &&
+                            !safePositions.some(pos => pos.x === newX && pos.y === newY);
 
             attempts++;
         }

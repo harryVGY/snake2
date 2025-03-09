@@ -2,7 +2,7 @@
 <html lang="sv">
 <head>
   <meta charset="UTF-8">
-  <title>Snake / Ormen C Nivå</title>
+  <title>Snake / Ormen A Nivå</title>
   <link rel="stylesheet" href="css/snake.css">
   <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
 </head>
@@ -13,10 +13,26 @@
   <div class="slider-container">
     <label for="gridSizeSlider">Size of Grid: <span id="gridSizeValue">25</span></label>
     <input type="range" min="10" max="50" value="25" class="slider" id="gridSizeSlider">
+    <p>for ease, choose a size which is dividable with 400</p>
   </div>
   <div class="button-container">
     <button type="button" class="btn btn-primary m-2" id="startBtn">Start</button>
     <button type="button" class="btn btn-primary m-2" id="pauseBtn">Pause</button>
+  </div>
+  <div id="settings" class="settings card p-3 mt-3">
+    <h2 class="mb-3">Settings</h2>
+
+    <div class="form-group">
+      <div class="custom-control custom-switch">
+        <input type="checkbox" class="custom-control-input" id="obstaclesToggle" checked>
+        <label class="custom-control-label" for="obstaclesToggle">Enable Obstacles</label>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label for="foodCountSlider">Food Count: <span id="foodCountValue">1</span></label>
+      <input type="range" class="custom-range" min="1" max="5" value="1" id="foodCountSlider">
+    </div>
   </div>
   <script src="js/constants.js"></script>
   <script src="js/foodImage.js"></script>
