@@ -74,9 +74,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 updateCanvas();
             }
         });
-        
-        // Set initial value from HTML
-        obstaclesEnabled = obstaclesToggle.checked;
     }
     
     // Setup food count slider
@@ -87,18 +84,12 @@ document.addEventListener('DOMContentLoaded', () => {
         foodSlider.addEventListener('input', function() {
             foodCountValue.textContent = this.value;
             foodCount = parseInt(this.value);
-            console.log("Food count updated to:", foodCount);
-            
             if (!gameInterval) {
                 // If game is not running, update UI immediately
                 placeFood();
                 updateCanvas();
             }
         });
-        
-        // Set initial value from HTML
-        foodCount = parseInt(foodSlider.value);
-        foodCountValue.textContent = foodCount;
     }
 
     // Visa startskärmen
@@ -123,7 +114,6 @@ function updateSettingsFromUI() {
     const foodSlider = document.getElementById('foodCountSlider');
     if (foodSlider) {
         foodCount = parseInt(foodSlider.value);
-        console.log("Starting game with food count:", foodCount);
     }
 }
 

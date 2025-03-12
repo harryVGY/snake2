@@ -27,7 +27,6 @@ function isPositionOnSnake(x, y) {
 }
 
 // Placerar maten på en position som inte är på ormen eller hinder
-// Placerar maten på en position som inte är på ormen eller hinder
 function placeFood() {
     // Clear existing food array
     food = [];
@@ -406,10 +405,22 @@ function placeObstacles(count = 10) {
     // Add positions in front of the snake to safe zone
     // Initial direction is 'right', so protect spaces to the right
     for (let i = 1; i <= safeZoneSize; i++) {
+        // Safe position directly in front
         safePositions.push({
             x: head.x + (i * gridSize),
-            y: head.y + (i * gridSize),
+            y: head.y
+        });
+        
+        // Safe position above
+        safePositions.push({
+            x: head.x + (i * gridSize),
             y: head.y - (i * gridSize)
+        });
+        
+        // Safe position below
+        safePositions.push({
+            x: head.x + (i * gridSize),
+            y: head.y + (i * gridSize)
         });
     }
 
