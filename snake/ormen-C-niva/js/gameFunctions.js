@@ -21,6 +21,11 @@ function initGame() {
     updateCanvas();
 }
 
+// Returnerar en slumpmässig fruktbild
+function randomizeFruit() {
+    const randomIndex = Math.floor(Math.random() * foodImages.length);
+    return foodImages[randomIndex];
+}
 // Kontrollerar om en position ligger på ormen
 function isPositionOnSnake(x, y) {
     return snake.some(segment => segment.x === x && segment.y === y);

@@ -1,6 +1,5 @@
 body {
     display: flex;
-    flex-direction: column;
     justify-content: center;
     align-items: center;
     height: 100vh;
@@ -8,6 +7,37 @@ body {
     background-color: #f0f0f0;
 }
 
+.game-container {
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    align-items: flex-start;
+    gap: 20px;
+}
+
+.game-area {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.settings-panel {
+    width: 300px;
+    align-self: stretch;
+    display: flex;
+    flex-direction: column;
+}
+
+.settings {
+    width: 100%;
+}
+
+canvas {
+    border: 1px solid #000;
+    background-color: #fff;
+}
+
+/* Keep your existing button styles */
 .button-container {
     display: flex;
     gap: 10px;
@@ -26,15 +56,11 @@ button {
     transition: background-color 0.3s;
 }
 
-canvas {
-    border: 1px solid #000;
-    background-color: #fff;
-}
-
 button:hover {
     background-color: #45a049;
 }
 
+/* Keep your existing score and game message styles */
 #score {
     font-size: 24px;
     margin-bottom: 10px;
@@ -42,7 +68,6 @@ button:hover {
 }
 
 .game-message {
-    position: absolute;
     display: none;
     background-color: rgba(0, 0, 0, 0.8);
     color: white;
@@ -51,6 +76,8 @@ button:hover {
     margin-bottom: 15px;
     text-align: center;
     width: 400px;
+    position: absolute;
+    z-index: 10;
 }
 
 .game-message h2 {
@@ -61,47 +88,29 @@ button:hover {
 .game-message p {
     margin: 5px 0;
 }
-.slider-container {
-    width: 400px;
-    margin: 10px auto;
-    text-align: center;
-  }
-  
-  .slider {
+
+/* Keep slider styles */
+.slider {
     width: 100%;
     height: 15px;
     border-radius: 5px;
     background: #d3d3d3;
     outline: none;
-  }
-  
-  .slider::-webkit-slider-thumb {
+}
+/* for mobile / firefox */
+.slider::-webkit-slider-thumb {
     appearance: none;
     width: 25px;
     height: 25px;
     border-radius: 50%;
     background: #4CAF50;
     cursor: pointer;
-  }
-  
-  .slider::-moz-range-thumb {
+}
+
+.slider::-moz-range-thumb {
     width: 25px;
     height: 25px;
     border-radius: 50%;
     background: #4CAF50;
     cursor: pointer;
-  }
-
-.settings {
-    max-width: 400px;
-    margin: 0 auto;
-}
-
-.settings h2 {
-    text-align: center;
-    margin-bottom: 20px;
-}
-
-.custom-control-label {
-    font-size: 1.1rem;
 }

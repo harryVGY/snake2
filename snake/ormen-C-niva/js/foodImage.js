@@ -48,9 +48,3 @@ function createFruitImages() {
 
 // Initiera bilderna
 const foodImages = createFruitImages();
-
-// Returnerar en slumpmässig fruktbild
-function randomizeFruit() {
-    const randomIndex = Math.floor(Math.random() * foodImages.length);
-    return foodImages[randomIndex];
-}

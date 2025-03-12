@@ -59,6 +59,32 @@ function placeFood() {
         }
     }
 }
+// Function to add just one food item
+function addOneFood() {
+    let newX, newY;
+    let validPosition = false;
+    let attempts = 0;
+
+    while (!validPosition && attempts < 100) {
+        newX = Math.floor(Math.random() * (canvasWidth / gridSize)) * gridSize;
+        newY = Math.floor(Math.random() * (canvasHeight / gridSize)) * gridSize;
+
+        // Check if position doesn't overlap with snake, obstacles or other food
+        validPosition = !isPositionOnSnake(newX, newY) &&
+                        !isPositionOnObstacle(newX, newY) &&
+                        !isPositionOnFood(newX, newY);
+
+        attempts++;
+    }
+
+    if (validPosition) {
+        food.push({
+            x: newX,
+            y: newY,
+            image: randomizeFruit()
+        });
+    }
+}
 
 // Check if a position has food on it
 function isPositionOnFood(x, y) {
@@ -129,14 +155,13 @@ function drawBodySegment(segment, index) {
     }
 
     // Check if snake_body image is loaded
-    if (typeof snakeBodyImage !== 'undefined' && 
-        snakeBodyImage.complete && 
-        snakeBodyImage.naturalWidth !== 0) 
+    if (typeof snakeBodyImage !== 'undefined' &&
+        snakeBodyImage.complete &&
+        snakeBodyImage.naturalWidth !== 0)
     {
-        // Save the current canvas state
         ctx.save();
 
-        // Move to the center of the segment (so rotations pivot correctly)
+        // Move to the center of the segment (so rotations are correctly)
         ctx.translate(segment.x + gridSize / 2, segment.y + gridSize / 2);
 
         let angle = 0;
@@ -154,12 +179,12 @@ function drawBodySegment(segment, index) {
         // 1) If snake is moving straight horizontally
         if (prevToCurrent.x !== 0 && currentToNext.x !== 0) {
             // Horizontal
-            angle = 0; 
+            angle = 0;
         }
         // 2) If snake is moving straight vertically
         else if (prevToCurrent.y !== 0 && currentToNext.y !== 0) {
             // Vertical
-            angle = Math.PI / 2; 
+            angle = Math.PI / 2;
         }
         // 3) Otherwise, the snake is turning
         else {
@@ -265,6 +290,7 @@ function drawPauseOverlay() {
 
 // Hanterar tangenttryckningar för att ändra riktning
 function changeDirection(event) {
+    event.preventDefault();
     switch (event.key) {
         case 'ArrowUp':
         case 'w':
@@ -365,15 +391,19 @@ function moveSnake() {
         }
     }
 
+    // Replace the end of your moveSnake function (just the part that handles food)
     if (foodEaten) {
         // Remove the eaten food
         food.splice(foodIndex, 1);
         score++;
 
-        // If all food is eaten, place new food
-        if (food.length === 0) {
-            placeFood();
+        // Check if player has won after eating food
+        if (checkWinCondition()) {
+            return; // Game is over, no need to continue
         }
+
+        // Spawn a new food item immediately after eating one
+        addOneFood();
     } else {
         snake.pop();  // Tar bort svansen om ingen mat äts
     }
@@ -410,13 +440,13 @@ function placeObstacles(count = 10) {
             x: head.x + (i * gridSize),
             y: head.y
         });
-        
+
         // Safe position above
         safePositions.push({
             x: head.x + (i * gridSize),
             y: head.y - (i * gridSize)
         });
-        
+
         // Safe position below
         safePositions.push({
             x: head.x + (i * gridSize),
@@ -483,6 +513,49 @@ function drawObstacles() {
         ctx.lineTo(obstacle.x, obstacle.y + gridSize);
         ctx.stroke();
     });
+}
+
+
+// Function to check if player has won by filling the entire board
+function checkWinCondition() {
+    // Calculate total number of tiles on the board
+    const totalTiles = (canvasWidth / gridSize) * (canvasHeight / gridSize);
+
+    // If snake length equals total tiles minus obstacles, player has won!
+    const availableTiles = totalTiles - obstacles.length;
+    if (snake.length >= availableTiles) {
+        winGame();
+        return true;
+    }
+    return false;
+}
+
+// Function to handle win state
+function winGame() {
+    clearInterval(gameInterval);
+    gameInterval = null;
+
+    const messageDiv = document.getElementById('gameMessage');
+
+    messageDiv.innerHTML = `
+        <h2 style="color: gold;">YOU WIN!</h2>
+        <p>Congratulations! You filled the entire board!</p>
+        <p>Final Score: ${score}</p>
+        <p>Click Start to play again</p>
+    `;
+
+    // Show the message div
+    messageDiv.style.display = 'block';
+
+    // Update button states
+    document.getElementById('startBtn').innerText = 'Start';
+    document.getElementById('pauseBtn').disabled = true;
+    document.getElementById('pauseBtn').innerText = 'Pause';
+
+    // Reset pause state
+    if (typeof isPaused !== 'undefined') {
+        isPaused = false;
+    }
 }
 
 

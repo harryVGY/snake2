@@ -12,7 +12,7 @@ let direction = 'right';
 let nextDirection = direction;
 let food = [{ x: 0, y: 0, image: null }]; // Changed to array to support multiple food items
 let score = 0;
-let gameSpeed = 100; // uppdateringar per sekund, högre är långsammare
+let gameSpeed = 200; // uppdateringar per sekund, högre är långsammare
 let gameInterval = null;
 let obstacles = []; // Array för att hålla alla hinder
 
