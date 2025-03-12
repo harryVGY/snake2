@@ -536,14 +536,13 @@ function winGame() {
     gameInterval = null;
 
     const messageDiv = document.getElementById('gameMessage');
-
+    // you get the whole snake as points( by default that is 3 more then if you used score)
     messageDiv.innerHTML = `
         <h2 style="color: gold;">YOU WIN!</h2>
         <p>Congratulations! You filled the entire board!</p>
-        <p>Final Score: ${score}</p>
+        <p>Final Score: ${snake.length}</p>
         <p>Click Start to play again</p>
     `;
-
     // Show the message div
     messageDiv.style.display = 'block';
 
