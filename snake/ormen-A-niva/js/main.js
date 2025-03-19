@@ -1,15 +1,12 @@
-// Variabel för att hålla koll på om spelet är pausat
+// Variables for game state
 let isPaused = false;
 
 // Initierar spelkontrollen när sidan laddats
 document.addEventListener('DOMContentLoaded', () => {
     console.log("DOM Content Loaded");
 
-    // Check that everything is initialized
-    if (!ctx) {
-        console.error("Canvas context not available!");
-        return;
-    }
+    // Initialize game immediately to show map, but don't start movement
+    initGame();
 
     // Event listener för start/reset-knapp
     document.getElementById('startBtn').addEventListener('click', () => {
@@ -19,17 +16,16 @@ document.addEventListener('DOMContentLoaded', () => {
             clearInterval(gameInterval);
             gameInterval = null;
         }
-
-        isPaused = false;
         document.getElementById('pauseBtn').innerText = 'Pause';
         document.getElementById('pauseBtn').disabled = false;
+        initGame();
+        // When clicking Start, bypass the initializing state and start immediately
+        initializing = false;
+        gameInterval = setInterval(gameLoop, gameSpeed);
+        document.getElementById('startBtn').innerText = 'Reset';
 
         // Update settings before starting game
         updateSettingsFromUI();
-
-        initGame();
-        gameInterval = setInterval(gameLoop, gameSpeed);
-        document.getElementById('startBtn').innerText = 'Reset';
     });
 
     // Event listener för paus-knapp
@@ -117,14 +113,16 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Visa startskärmen
-    ctx.fillStyle = 'black';
-    ctx.font = '30px Arial';
-    ctx.textAlign = 'center';
-    ctx.fillText('Snake Game', canvasWidth/2, canvasHeight/3);
-    ctx.font = '16px Arial';
-    ctx.fillText('Press Start to begin', canvasWidth/2, canvasHeight/2);
-    ctx.fillText('Use arrow keys or WASD to control', canvasWidth/2, canvasHeight/2 + 30);
+    // Setup speed slider
+    const speedSlider = document.getElementById('speedSlider');
+    const speedValue = document.getElementById('speedValue');
+
+    if (speedSlider && speedValue) {
+        speedSlider.addEventListener('input', function() {
+            speedValue.textContent = this.value;
+            updateGameSpeed(parseInt(this.value));
+        });
+    }
 });
 
 // Function to update settings from UI controls
@@ -141,9 +139,6 @@ function updateSettingsFromUI() {
         foodCount = parseInt(foodSlider.value);
     }
 }
-
-// Update the existing updateGridSize function with this improved version
-// Replace the whole function in main.js
 function updateGridSize(newSize) {
     // Ensure grid size evenly divides canvas dimensions
     if (canvasWidth % newSize !== 0 || canvasHeight % newSize !== 0) {
@@ -183,6 +178,19 @@ function updateGridSize(newSize) {
         updateSettingsFromUI();
 
         initGame();
+        gameInterval = setInterval(gameLoop, gameSpeed);
+    }
+}
+
+function updateGameSpeed(value) {
+    // Convert slider value (1-10) to actual game speed
+    // 1 = slow (400ms), 10 = fast (100ms)
+    baseGameSpeed = 500 - (value * 40);
+
+    // Only update the active game speed if game is running and not in initial state
+    if (gameInterval && !initializing) {
+        gameSpeed = baseGameSpeed;
+        clearInterval(gameInterval);
         gameInterval = setInterval(gameLoop, gameSpeed);
     }
 }

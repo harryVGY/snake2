@@ -11,6 +11,13 @@ snakeBodyImage.onerror = function() {
     console.log("Snake body image failed to load, will use fallback color");
 };
 
+// Add this to the file to load the snake head image
+const snakeHeadImage = new Image();
+snakeHeadImage.src = 'images/snake_head.jpg';
+snakeHeadImage.onerror = function() {
+    console.log("Snake head image failed to load, will use fallback color");
+};
+
 // Skapa en funktion för att generera bilder med fallback
 function createFruitImages() {
     // Försök ladda bilder

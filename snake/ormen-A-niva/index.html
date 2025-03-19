@@ -11,6 +11,12 @@
     <div class="game-area">
       <div id="gameMessage" class="game-message"></div>
       <div id="score" class="display-1">Score: 0</div>
+      <div class="game-stats">
+        <div class="game-info">
+          <span>Speed: <span id="currentSpeed">0%</span></span>
+          <span class="move-queue-indicator" id="moveQueueStatus"></span>
+        </div>
+      </div>
       <canvas id="gameCanvas" width="400" height="400"></canvas>
       <div class="button-container">
         <button type="button" class="btn btn-primary m-2" id="startBtn">Start</button>
@@ -38,6 +44,12 @@
         <div class="form-group">
           <label for="foodCountSlider">Food Count: <span id="foodCountValue">1</span></label>
           <input type="range" class="custom-range" min="1" max="250" value="1" id="foodCountSlider">
+        </div>
+
+        <div class="form-group">
+          <label for="speedSlider">Game Speed: <span id="speedValue">5</span></label>
+          <input type="range" min="1" max="10" value="5" class="slider" id="speedSlider">
+          <small class="form-text text-muted">1 = Slowest, 10 = Fastest</small>
         </div>
       </div>
     </div>
