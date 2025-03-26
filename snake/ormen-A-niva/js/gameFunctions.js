@@ -101,8 +101,6 @@ function moveSnake() {
         // Increase game speed when food is eaten
         increaseSpeed();
 
-        // Play eat sound
-        gameSounds.eat.play();
 
         // Check if player has won after eating food
         if (checkWinCondition()) {
@@ -118,6 +116,11 @@ function moveSnake() {
 
 // Function to increase game speed when food is eaten
 function increaseSpeed() {
+    // Only increase speed if enabled in settings
+    if (!speedIncreaseEnabled) {
+        return;
+    }
+    
     // Only decrease if above minimum delay (maximum speed)
     if (gameSpeed > maxSpeed) {
         gameSpeed -= speedIncreasePerFood;
@@ -143,28 +146,26 @@ function increaseSpeed() {
 
 // Add this function to show current speed in game UI
 function updateSpeedDisplay() {
-    const speedPercent = Math.floor(((baseGameSpeed - gameSpeed) / (baseGameSpeed - maxSpeed)) * 100);
-    document.getElementById('currentSpeed').textContent = `${speedPercent}%`;
+    const speedPercent = Math.floor(((baseGameSpeed - gameSpeed) / (baseGameSpeed - maxSpeed)) *100);
+    document.getElementById('currentSpeed').textContent = `${speedPercent}`;
 }
 
 // Visual effect when speed increases
 function showSpeedBoost() {
-    // Flash effect around the canvas
-    const flashOverlay = document.createElement('div');
-    flashOverlay.style.position = 'absolute';
-    flashOverlay.style.width = `${canvasWidth}px`;
-    flashOverlay.style.height = `${canvasHeight}px`;
-    flashOverlay.style.backgroundColor = 'rgba(255, 255, 0, 0.2)';
-    flashOverlay.style.zIndex = '5';
-    flashOverlay.style.pointerEvents = 'none';
-    document.querySelector('.game-area').appendChild(flashOverlay);
+    const speedElement = document.getElementById('currentSpeed');
     
-    // Remove after animation
-    setTimeout(() => {
-        flashOverlay.remove();
-    }, 300);
+    // Remove the class if it's already there
+    speedElement.classList.remove('speed-boost');
+    
+    // Force a reflow before adding the class again
+    void speedElement.offsetWidth;
+    
+    // Add the animation class
+    speedElement.classList.add('speed-boost');
+    
+    // No need for setTimeout as the animation will complete on its own
+    // The animation is defined to return to the original state
 }
-
 
 //---------------------------------------------
 // INPUT & CONTROL
@@ -563,15 +564,15 @@ function drawPauseOverlay() {
 
 // Replace the drawgrid function with this checkered background version
 function drawgrid() {
-    // Purple colors for checkered pattern
-    const purpleLight = '#E6E6FA'; // Lavender
-    const purpleDark = '#9370DB'; // MediumPurple
+    // colors for checkered pattern
+    const color1 = '#E6E6FA'; // Lavender
+    const color2 = '#9370DB'; // MediumPurple
     
     // Draw the checkered background
     for (let x = 0; x < canvasWidth; x += gridSize) {
         for (let y = 0; y < canvasHeight; y += gridSize) {
             // Alternate colors based on position
-            ctx.fillStyle = (x/gridSize + y/gridSize) % 2 === 0 ? purpleLight : purpleDark;
+            ctx.fillStyle = (x/gridSize + y/gridSize) % 2 === 0 ? color1 : color2;
             ctx.fillRect(x, y, gridSize, gridSize);
         }
     }

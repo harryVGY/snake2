@@ -114,3 +114,34 @@ button:hover {
     background: #4CAF50;
     cursor: pointer;
 }
+/* Speed boost animation */
+@keyframes speedBoost {
+    0% {
+      transform: scale(1);
+      color: inherit;
+      text-shadow: none;
+    }
+    50% {
+      transform: scale(1.5);
+      color: #ff5500;
+      text-shadow: 0 0 5px yellow;
+    }
+    100% {
+      transform: scale(1);
+      color: inherit;
+      text-shadow: none;
+    }
+  }
+  
+  .speed-boost {
+    animation: speedBoost 0.3s ease-in-out;
+  }
+
+.speed-display {
+  display: flex;
+  align-items: center;
+}
+
+.speed-value {
+  margin-left: 5px;
+}

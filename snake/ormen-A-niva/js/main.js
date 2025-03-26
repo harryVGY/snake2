@@ -121,7 +121,20 @@ document.addEventListener('DOMContentLoaded', () => {
         speedSlider.addEventListener('input', function() {
             speedValue.textContent = this.value;
             updateGameSpeed(parseInt(this.value));
+            
+            updateSpeedDisplay();
         });
+    }
+
+    // Setup speed increase toggle
+    const speedIncreaseToggle = document.getElementById('speedIncreaseToggle');
+    if (speedIncreaseToggle) {
+        speedIncreaseToggle.addEventListener('change', function() {
+            speedIncreaseEnabled = this.checked;
+        });
+        
+        // Set initial value from HTML
+        speedIncreaseEnabled = speedIncreaseToggle.checked;
     }
 });
 
@@ -138,7 +151,14 @@ function updateSettingsFromUI() {
     if (foodSlider) {
         foodCount = parseInt(foodSlider.value);
     }
+
+    // Update speed increase setting
+    const speedIncreaseToggle = document.getElementById('speedIncreaseToggle');
+    if (speedIncreaseToggle) {
+        speedIncreaseEnabled = speedIncreaseToggle.checked;
+    }
 }
+
 function updateGridSize(newSize) {
     // Ensure grid size evenly divides canvas dimensions
     if (canvasWidth % newSize !== 0 || canvasHeight % newSize !== 0) {

@@ -24,3 +24,4 @@ let obstaclesEnabled = true;
 let foodCount = 1;
 let speedIncreasePerFood = 5; // Speed increase per food item eaten
 let maxSpeed = 50; // Maximum speed (minimum delay)
+let speedIncreaseEnabled = true; // New setting to control speed increase
