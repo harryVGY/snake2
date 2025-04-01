@@ -136,6 +136,27 @@ document.addEventListener('DOMContentLoaded', () => {
         // Set initial value from HTML
         speedIncreaseEnabled = speedIncreaseToggle.checked;
     }
+
+    // Setup enemy toggle
+    const enemyToggle = document.getElementById('enemyToggle');
+    if (enemyToggle) {
+        enemyToggle.addEventListener('change', function() {
+            enemyEnabled = this.checked;
+            
+            if (!gameInterval) {
+                // If game is not running, update UI immediately
+                if (enemyEnabled) {
+                    initEnemySnake();
+                } else {
+                    enemySnake = [];
+                }
+                updateCanvas();
+            }
+        });
+        
+        // Set initial value from HTML
+        enemyEnabled = enemyToggle.checked;
+    }
 });
 
 // Function to update settings from UI controls

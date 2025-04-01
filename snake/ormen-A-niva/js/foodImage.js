@@ -1,8 +1,7 @@
-// Laddar bilder för maten - använd lokala bilder eller färger som fallback
-// Definiera lokala fallback-färger
+// load images for
 const foodColors = ['red', 'yellow', 'purple', 'green'];
 
-// Snake body image with proper error handling
+// Snake body image
 const snakeBodyImage = new Image();
 snakeBodyImage.src = 'images/snake_body.png';
 
@@ -11,16 +10,15 @@ snakeBodyImage.onerror = function() {
     console.log("Snake body image failed to load, will use fallback color");
 };
 
-// Add this to the file to load the snake head image
+// load snake head
 const snakeHeadImage = new Image();
 snakeHeadImage.src = 'images/snake_head.jpg';
 snakeHeadImage.onerror = function() {
     console.log("Snake head image failed to load, will use fallback color");
 };
 
-// Skapa en funktion för att generera bilder med fallback
+// image fruit function with fallback
 function createFruitImages() {
-    // Försök ladda bilder
     const appleImage = new Image();
     appleImage.src = 'images/apple.png';
 
@@ -35,37 +33,34 @@ function createFruitImages() {
 
     const images = [appleImage, bananaImage, blueberryImage, pearImage];
 
-    // Lägg till felhantering för bilder
+    // Lägg till error handling
     images.forEach((img, index) => {
         img.onerror = function() {
             console.log(`Image ${img.src} failed to load, using color fallback`);
-            // Skapa en färgad ruta istället
+            // create a colored square as a fallback
             const canvas = document.createElement('canvas');
             canvas.width = 20;
             canvas.height = 20;
             const tempCtx = canvas.getContext('2d');
             tempCtx.fillStyle = foodColors[index];
             tempCtx.fillRect(0, 0, 20, 20);
-
-            // Lägg till en border
             tempCtx.strokeStyle = 'white';
             tempCtx.lineWidth = 1;
             tempCtx.strokeRect(1, 1, 18, 18);
 
-            // Ersätt originalet med den genererade bilden
+            // replace the image with the colored square
             const newImg = new Image();
             newImg.src = canvas.toDataURL();
             images[index] = newImg;
         };
     });
 
-    return images; // Returnera bilderna
+    return images;
 }
 
-// Initiera bilderna
 const foodImages = createFruitImages();
 
-// Returnerar en slumpmässig fruktbild
+// Function to get a random fruit image
 function randomizeFruit() {
     const randomIndex = Math.floor(Math.random() * foodImages.length);
     return foodImages[randomIndex];

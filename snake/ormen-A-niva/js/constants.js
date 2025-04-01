@@ -19,6 +19,14 @@ let obstacles = []; // Array for all obstacles
 let moveQueue = []; // Queue for fast moves
 let initializing = true; // Flag to track if game is in initialization state
 
+// Enemy snake settings
+let enemySnake = [];
+let enemyDirection = 'left';
+let enemyEnabled = true;
+let enemySpeed = 4; // Increased to 4 from 2, making it move half as fast
+let enemyMoveCounter = 0;
+let enemyLength = 3; // Initial enemy length
+
 // Game settings
 let obstaclesEnabled = true;
 let foodCount = 1;

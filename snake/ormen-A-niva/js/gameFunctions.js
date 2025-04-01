@@ -23,15 +23,20 @@ function initGame() {
     for (let i = 0; i < initialSnakeLength; i++) {
         snake.push({ x: startX - i * gridSize, y: startY });
     }
-    
+
     // Set up board
     placeFood();
     placeObstacles(10); // Number of obstacles
     score = 0;
-    
+
+    // Initialize enemy snake if enabled
+    if (enemyEnabled) {
+        initEnemySnake();
+    }
+
     // Draw initial state without starting movement
     updateCanvas();
-    
+
     // Show transparent start overlay
     drawStartOverlay();
 }
@@ -40,11 +45,18 @@ function initGame() {
 function gameLoop() {
     // Only proceed if the game is not paused
     if (!isPaused) {
-        // Process any queued moves with our improved system
+        // Process any queued moves first
         processQueuedMoves();
         
+        // Then update direction and move snake
         direction = nextDirection;
         moveSnake();
+        
+        // Rest of game logic
+        if (enemyEnabled && !initializing) {
+            moveEnemySnake();
+        }
+        
         updateCanvas();
     }
 }
@@ -76,6 +88,12 @@ function moveSnake() {
     // Check collision with obstacles
     if (obstaclesEnabled && isPositionOnObstacle(head.x, head.y)) {
         gameOver('Hit an obstacle');
+        return;
+    }
+
+    // Add check for collision with enemy snake
+    if (enemyEnabled && isPositionOnEnemySnake(head.x, head.y)) {
+        gameOver('Hit enemy snake');
         return;
     }
 
@@ -120,31 +138,31 @@ function increaseSpeed() {
     if (!speedIncreaseEnabled) {
         return;
     }
-    
+
     // Only decrease if above minimum delay (maximum speed)
     if (gameSpeed > maxSpeed) {
         gameSpeed -= speedIncreasePerFood;
-        
+
         // Don't go below the maximum speed (minimum delay)
         if (gameSpeed < maxSpeed) {
             gameSpeed = maxSpeed;
         }
-        
+
         // Restart the interval with new speed
         if (gameInterval) {
             clearInterval(gameInterval);
             gameInterval = setInterval(gameLoop, gameSpeed);
         }
     }
-    
+
     // Update speed display
     updateSpeedDisplay();
-    
+
     // Add visual feedback when speed increases
     showSpeedBoost();
 }
 
-// Add this function to show current speed in game UI
+//function to show current speed in game UI
 function updateSpeedDisplay() {
     const speedPercent = Math.floor(((baseGameSpeed - gameSpeed) / (baseGameSpeed - maxSpeed)) *100);
     document.getElementById('currentSpeed').textContent = `${speedPercent}`;
@@ -153,16 +171,16 @@ function updateSpeedDisplay() {
 // Visual effect when speed increases
 function showSpeedBoost() {
     const speedElement = document.getElementById('currentSpeed');
-    
+
     // Remove the class if it's already there
     speedElement.classList.remove('speed-boost');
-    
+
     // Force a reflow before adding the class again
     void speedElement.offsetWidth;
-    
+
     // Add the animation class
     speedElement.classList.add('speed-boost');
-    
+
     // No need for setTimeout as the animation will complete on its own
     // The animation is defined to return to the original state
 }
@@ -174,7 +192,7 @@ function showSpeedBoost() {
 // Handles key presses to change direction
 function changeDirection(event) {
     event.preventDefault();
-    
+
     // Start the game on first input if initializing
     if (initializing) {
         initializing = false;
@@ -185,14 +203,14 @@ function changeDirection(event) {
         // Remove start overlay
         updateCanvas();
     }
-    
+
     let newDirection;
     switch (event.key) {
         case 'ArrowUp':
         case 'w':
         case 'W':
             newDirection = 'up';
-            if (direction !== 'down' && 
+            if (direction !== 'down' &&
                 (moveQueue.length === 0 || moveQueue[moveQueue.length-1] !== 'down')) {
                 queueMove(newDirection);
             }
@@ -201,7 +219,7 @@ function changeDirection(event) {
         case 's':
         case 'S':
             newDirection = 'down';
-            if (direction !== 'up' && 
+            if (direction !== 'up' &&
                 (moveQueue.length === 0 || moveQueue[moveQueue.length-1] !== 'up')) {
                 queueMove(newDirection);
             }
@@ -210,7 +228,7 @@ function changeDirection(event) {
         case 'a':
         case 'A':
             newDirection = 'left';
-            if (direction !== 'right' && 
+            if (direction !== 'right' &&
                 (moveQueue.length === 0 || moveQueue[moveQueue.length-1] !== 'right')) {
                 queueMove(newDirection);
             }
@@ -219,7 +237,7 @@ function changeDirection(event) {
         case 'd':
         case 'D':
             newDirection = 'right';
-            if (direction !== 'left' && 
+            if (direction !== 'left' &&
                 (moveQueue.length === 0 || moveQueue[moveQueue.length-1] !== 'left')) {
                 queueMove(newDirection);
             }
@@ -227,7 +245,7 @@ function changeDirection(event) {
         case ' ':
             if (gameInterval || isPaused) {
                 togglePause();
-            }   
+            }
             break;
         case 'Escape':
             if (typeof isPaused !== 'undefined') {
@@ -235,7 +253,7 @@ function changeDirection(event) {
             }
             break;
     }
-    
+
     // Play turn sound
     gameSounds.turn.play();
 }
@@ -244,6 +262,7 @@ function changeDirection(event) {
 const MAX_QUEUE_SIZE = 3; // Limit queue to last 3 moves
 
 // Add move to the queue (for fast moves)
+//buggy ahhh
 function queueMove(dir) {
     // Don't allow 180-degree turns (moving directly back)
     if ((dir === 'up' && direction === 'down') ||
@@ -252,26 +271,26 @@ function queueMove(dir) {
         (dir === 'right' && direction === 'left')) {
         return;
     }
-    
+
     // Don't queue the same move twice in a row
     if (moveQueue.length > 0 && moveQueue[moveQueue.length-1] === dir) {
         return;
     }
-    
+
     // If nextDirection is already set to this, don't queue it
     if (moveQueue.length === 0 && nextDirection === dir) {
         return;
     }
-    
+
     // Add to queue, but limit queue size
     moveQueue.push(dir);
     if (moveQueue.length > MAX_QUEUE_SIZE) {
         moveQueue.shift(); // Remove oldest move if queue gets too long
     }
-    
+
     // Visual feedback for move queue
     showMoveQueueIndicator();
-    
+
     console.log("Move queue:", moveQueue);
 }
 
@@ -279,13 +298,13 @@ function queueMove(dir) {
 function processQueuedMoves() {
     if (moveQueue.length > 0 && !initializing) {
         const nextMove = moveQueue[0]; // Peek at the next move
-        
+
         // Only process the move if it's valid from current position
         if ((nextMove === 'up' && direction !== 'down') ||
             (nextMove === 'down' && direction !== 'up') ||
             (nextMove === 'left' && direction !== 'right') ||
             (nextMove === 'right' && direction !== 'left')) {
-            
+
             nextDirection = moveQueue.shift(); // Remove and use this move
         } else {
             // This move is now invalid, so remove it
@@ -310,9 +329,9 @@ function showMoveQueueIndicator() {
     indicator.style.lineHeight = '20px';
     indicator.textContent = moveQueue.length;
     indicator.style.zIndex = '100';
-    
+
     document.querySelector('.game-area').appendChild(indicator);
-    
+
     // Remove after a short time
     setTimeout(() => {
         indicator.remove();
@@ -372,7 +391,7 @@ function placeFood() {
     let placedCount = 0;
     let maxAttempts = 200; // Avoid infinite loops
     let attempts = 0;
-    
+
     while (placedCount < foodCount && attempts < maxAttempts) {
         let newX, newY;
         let validPosition = false;
@@ -399,12 +418,12 @@ function placeFood() {
             });
             placedCount++;
         }
-        
+
         attempts++;
     }
-    
+
     console.log(`Successfully placed ${placedCount} food items`);
-    
+
     // Emergency fallback if no food was placed
     if (food.length === 0) {
         console.warn("Failed to place food normally, using emergency placement");
@@ -533,6 +552,12 @@ function updateCanvas() {
     ctx.clearRect(0, 0, canvasWidth, canvasHeight);
     drawgrid();
     drawObstacles();
+
+    // Draw enemy before player so player appears on top
+    if (enemyEnabled) {
+        drawEnemySnake();
+    }
+
     drawSnake();
     drawFood();
     document.getElementById('score').innerText = `Score: ${score}`;
@@ -566,8 +591,8 @@ function drawPauseOverlay() {
 function drawgrid() {
     // colors for checkered pattern
     const color1 = '#E6E6FA'; // Lavender
-    const color2 = '#9370DB'; // MediumPurple
-    
+    const color2 = '#cccce2'; // MediumPurple
+
     // Draw the checkered background
     for (let x = 0; x < canvasWidth; x += gridSize) {
         for (let y = 0; y < canvasHeight; y += gridSize) {
@@ -576,7 +601,7 @@ function drawgrid() {
             ctx.fillRect(x, y, gridSize, gridSize);
         }
     }
-    
+
     // Optional: Draw grid lines for better visibility
     ctx.fillStyle = 'rgba(255, 255, 255, 0.2)';  // Transparent white
     for (let i = 0; i < canvasWidth; i += gridSize) {
@@ -593,12 +618,12 @@ function drawSnake() {
         if (index === 0) {
             // Head - draw with image if available
             if (typeof snakeHeadImage !== 'undefined' &&
-                snakeHeadImage.complete && 
+                snakeHeadImage.complete &&
                 snakeHeadImage.naturalWidth !== 0) {
-                
+
                 ctx.save();
                 ctx.translate(segment.x + gridSize / 2, segment.y + gridSize / 2);
-                
+
                 // Rotate head based on direction
                 let angle = 0;
                 switch (direction) {
@@ -607,7 +632,7 @@ function drawSnake() {
                     case 'left': angle = Math.PI; break;
                     case 'right': angle = 0; break;
                 }
-                
+
                 ctx.rotate(angle);
                 ctx.drawImage(
                     snakeHeadImage,
@@ -738,13 +763,13 @@ function drawFood() {
     try {
         // Debug - show how many food items we're drawing
         console.log("Drawing food items:", food.length);
-        
+
         if (food.length === 0) {
             // Ensure we always have at least some food
             console.warn("No food to draw, adding emergency food");
             addOneFood();
         }
-        
+
         food.forEach(item => {
             if (item.image && item.image.complete && item.image.naturalWidth !== 0) {
                 ctx.drawImage(item.image, item.x, item.y, gridSize, gridSize);
@@ -752,15 +777,15 @@ function drawFood() {
                 // Improved fallback - more noticeable food item
                 ctx.fillStyle = 'red';
                 ctx.fillRect(item.x, item.y, gridSize, gridSize);
-                
+
                 // Add a yellow center dot
                 ctx.fillStyle = 'yellow';
                 ctx.beginPath();
                 ctx.arc(
-                    item.x + gridSize/2, 
-                    item.y + gridSize/2, 
-                    gridSize/4, 
-                    0, 
+                    item.x + gridSize/2,
+                    item.y + gridSize/2,
+                    gridSize/4,
+                    0,
                     Math.PI * 2
                 );
                 ctx.fill();
@@ -854,14 +879,12 @@ function gameOver(reason = '') {
         <h2>Game Over</h2>
         <p>Final Score: ${score}</p>
         ${reason ? `<p>Reason: ${reason}</p>` : ''}
-        <p>Click Start to play again</p>
+        <p>Click Reset to play again</p>
     `;
 
     // Show the message div
     messageDiv.style.display = 'block';
 
-    // Play die sound
-    gameSounds.die.play();
 
     // Update button states
     document.getElementById('startBtn').innerText = 'Start';
@@ -893,4 +916,337 @@ function getSegmentType(prev, current, next) {
     }
 
     return 'straight';
+}
+
+//---------------------------------------------
+// ENEMY SNAKE MANAGEMENT
+//---------------------------------------------
+
+// Initialize the enemy snake
+function initEnemySnake() {
+    enemySnake = [];
+
+    // Place enemy in the opposite corner from player
+    const startX = Math.floor(canvasWidth / gridSize) * gridSize - gridSize;
+    const startY = Math.floor(canvasHeight / gridSize) * gridSize - gridSize;
+
+    // Create enemy snake body
+    for (let i = 0; i < enemyLength; i++) {
+        enemySnake.push({ x: startX - i * gridSize, y: startY });
+    }
+
+    // Reset enemy direction
+    enemyDirection = 'left';
+}
+
+// Draw the enemy snake (red color)
+function drawEnemySnake() {
+    if (!enemyEnabled) return;
+
+    enemySnake.forEach((segment, index) => {
+        // Use red for enemy snake head, lighter red for body
+        ctx.fillStyle = index === 0 ? '#8B0000' : '#FF4500';
+        ctx.fillRect(segment.x, segment.y, gridSize, gridSize);
+
+        // Add texture/pattern to make it distinct from player
+        if (index === 0) {
+            // Draw eyes for head
+            ctx.fillStyle = 'white';
+
+            // Position eyes based on direction
+            let leftEyeX, leftEyeY, rightEyeX, rightEyeY;
+            const eyeSize = gridSize / 5;
+            const eyeOffset = gridSize / 3;
+
+            switch(enemyDirection) {
+                case 'up':
+                    leftEyeX = segment.x + eyeOffset;
+                    leftEyeY = segment.y + eyeOffset;
+                    rightEyeX = segment.x + gridSize - eyeOffset - eyeSize;
+                    rightEyeY = segment.y + eyeOffset;
+                    break;
+                case 'down':
+                    leftEyeX = segment.x + eyeOffset;
+                    leftEyeY = segment.y + gridSize - eyeOffset - eyeSize;
+                    rightEyeX = segment.x + gridSize - eyeOffset - eyeSize;
+                    rightEyeY = segment.y + gridSize - eyeOffset - eyeSize;
+                    break;
+                case 'left':
+                    leftEyeX = segment.x + eyeOffset;
+                    leftEyeY = segment.y + eyeOffset;
+                    rightEyeX = segment.x + eyeOffset;
+                    rightEyeY = segment.y + gridSize - eyeOffset - eyeSize;
+                    break;
+                case 'right':
+                    leftEyeX = segment.x + gridSize - eyeOffset - eyeSize;
+                    leftEyeY = segment.y + eyeOffset;
+                    rightEyeX = segment.x + gridSize - eyeOffset - eyeSize;
+                    rightEyeY = segment.y + gridSize - eyeOffset - eyeSize;
+                    break;
+            }
+
+            ctx.fillRect(leftEyeX, leftEyeY, eyeSize, eyeSize);
+            ctx.fillRect(rightEyeX, rightEyeY, eyeSize, eyeSize);
+        }
+    });
+}
+
+// Move the enemy snake to chase the player
+function moveEnemySnake() {
+    if (!enemyEnabled || enemySnake.length === 0) return;
+
+    // Only move the enemy every enemySpeed frames
+    enemyMoveCounter++;
+    if (enemyMoveCounter < enemySpeed) return;
+    enemyMoveCounter = 0;
+
+    // Get the current head
+    const head = { ...enemySnake[0] };
+
+    // Find direction to move towards player
+    const playerHead = snake[0];
+
+    // Decide direction based on player position - simple pathfinding
+    let newDirection = decideEnemyDirection(head, playerHead);
+
+    // Update head position based on direction
+    switch (newDirection) {
+        case 'up': head.y -= gridSize; break;
+        case 'down': head.y += gridSize; break;
+        case 'left': head.x -= gridSize; break;
+        case 'right': head.x += gridSize; break;
+    }
+
+    // Check for collisions with walls
+    if (head.x < 0 || head.x >= canvasWidth || head.y < 0 || head.y >= canvasHeight) {
+        // If hitting wall, reposition enemy snake to a safe location
+        repositionEnemySnake();
+        return;
+    }
+
+    // Check for collisions with obstacles
+    if (obstaclesEnabled && isPositionOnObstacle(head.x, head.y)) {
+        // Try to find a new direction that doesn't hit an obstacle
+        const validDirections = findValidDirections(enemySnake[0]);
+        if (validDirections.length > 0) {
+            // Choose a random valid direction
+            newDirection = validDirections[Math.floor(Math.random() * validDirections.length)];
+
+            // Recalculate head position
+            head.x = enemySnake[0].x;
+            head.y = enemySnake[0].y;
+
+            switch (newDirection) {
+                case 'up': head.y -= gridSize; break;
+                case 'down': head.y += gridSize; break;
+                case 'left': head.x -= gridSize; break;
+                case 'right': head.x += gridSize; break;
+            }
+        } else {
+            // If no valid directions, reposition enemy snake
+            repositionEnemySnake();
+            return;
+        }
+    }
+
+    // Check for collision with self or player's snake
+    if (isPositionOnEnemySnake(head.x, head.y) || isPositionOnSnake(head.x, head.y)) {
+        // If collision, reposition enemy snake
+        repositionEnemySnake();
+        return;
+    }
+
+    // Update enemy direction
+    enemyDirection = newDirection;
+
+    // Add new head
+    enemySnake.unshift(head);
+
+    // Check if enemy can eat food
+    let foodEaten = false;
+    let foodIndex = -1;
+
+    for (let i = 0; i < food.length; i++) {
+        if (head.x === food[i].x && head.y === food[i].y) {
+            foodEaten = true;
+            foodIndex = i;
+            break;
+        }
+    }
+
+    if (foodEaten) {
+        // Remove eaten food and add new one
+        food.splice(foodIndex, 1);
+        addOneFood();
+    } else {
+        // Remove tail if no food eaten
+        enemySnake.pop();
+    }
+}
+
+// Find a direction for the enemy to move towards the player
+function decideEnemyDirection(enemyHead, playerHead) {
+    // Calculate the difference between enemy and player positions
+    const dx = playerHead.x - enemyHead.x;
+    const dy = playerHead.y - enemyHead.y;
+
+    // Determine if horizontal or vertical movement has priority
+    // (alternate between prioritizing x and y for more natural movement)
+    const prioritizeX = Math.random() > 0.3;
+
+    let newDirection;
+
+    if (prioritizeX) {
+        // Try to move horizontally first
+        if (dx > 0 && enemyDirection !== 'left') {
+            newDirection = 'right';
+        } else if (dx < 0 && enemyDirection !== 'right') {
+            newDirection = 'left';
+        } else if (dy > 0 && enemyDirection !== 'up') {
+            newDirection = 'down';
+        } else if (dy < 0 && enemyDirection !== 'down') {
+            newDirection = 'up';
+        } else {
+            // Keep current direction as fallback
+            newDirection = enemyDirection;
+        }
+    } else {
+        // Try to move vertically first
+        if (dy > 0 && enemyDirection !== 'up') {
+            newDirection = 'down';
+        } else if (dy < 0 && enemyDirection !== 'down') {
+            newDirection = 'up';
+        } else if (dx > 0 && enemyDirection !== 'left') {
+            newDirection = 'right';
+        } else if (dx < 0 && enemyDirection !== 'right') {
+            newDirection = 'left';
+        } else {
+            // Keep current direction as fallback
+            newDirection = enemyDirection;
+        }
+    }
+
+    return newDirection;
+}
+
+// Find valid directions (no obstacles, walls or self)
+function findValidDirections(head) {
+    const directions = ['up', 'down', 'left', 'right'];
+    const validDirections = [];
+
+    for (const dir of directions) {
+        // Skip the opposite of current direction
+        if ((dir === 'up' && enemyDirection === 'down') ||
+            (dir === 'down' && enemyDirection === 'up') ||
+            (dir === 'left' && enemyDirection === 'right') ||
+            (dir === 'right' && enemyDirection === 'left')) {
+            continue;
+        }
+
+        // Calculate new position
+        let newX = head.x;
+        let newY = head.y;
+
+        switch (dir) {
+            case 'up': newY -= gridSize; break;
+            case 'down': newY += gridSize; break;
+            case 'left': newX -= gridSize; break;
+            case 'right': newX += gridSize; break;
+        }
+
+        // Check if position is valid
+        if (newX >= 0 && newX < canvasWidth &&
+            newY >= 0 && newY < canvasHeight &&
+            !isPositionOnObstacle(newX, newY) &&
+            !isPositionOnEnemySnake(newX, newY) &&
+            !isPositionOnSnake(newX, newY)) {
+            validDirections.push(dir);
+        }
+    }
+
+    return validDirections;
+}
+
+// Check if position is on enemy snake
+function isPositionOnEnemySnake(x, y) {
+    return enemySnake.some(segment => segment.x === x && segment.y === y);
+}
+
+// Reposition enemy snake to a safe location
+function repositionEnemySnake() {
+    // Try to find a safe position for the enemy snake
+    let safeSpot = findSafeSpotForEnemy();
+
+    if (safeSpot) {
+        // Create new enemy snake at safe position
+        enemySnake = [];
+        for (let i = 0; i < enemyLength; i++) {
+            enemySnake.push({
+                x: safeSpot.x - (i * (safeSpot.direction === 'right' ? -gridSize : gridSize)),
+                y: safeSpot.y - (i * (safeSpot.direction === 'down' ? -gridSize : gridSize))
+            });
+        }
+        enemyDirection = safeSpot.direction;
+    } else {
+        // If no safe spot found, disable enemy snake temporarily
+        enemySnake = [];
+        // Will be re-enabled on next game loop
+    }
+}
+
+// Find a safe spot for the enemy snake
+function findSafeSpotForEnemy() {
+    // Try to find a position that's not near the player
+    const safeDistance = 5 * gridSize; // Stay at least 5 grid cells away
+    const playerHead = snake[0];
+
+    // Try up to 50 random positions
+    for (let attempts = 0; attempts < 50; attempts++) {
+        const x = Math.floor(Math.random() * (canvasWidth / gridSize)) * gridSize;
+        const y = Math.floor(Math.random() * (canvasHeight / gridSize)) * gridSize;
+
+        // Calculate distance to player
+        const distToPlayer = Math.abs(x - playerHead.x) + Math.abs(y - playerHead.y);
+
+        // Check if position is safe
+        if (distToPlayer >= safeDistance &&
+            !isPositionOnSnake(x, y) &&
+            !isPositionOnObstacle(x, y) &&
+            !isPositionOnFood(x, y)) {
+
+            // Determine a safe direction for the enemy snake
+            const directions = ['up', 'down', 'left', 'right'];
+            for (const dir of directions) {
+                let validDirection = true;
+
+                // Check if we can place the whole enemy snake in this direction
+                for (let i = 1; i < enemyLength; i++) {
+                    let checkX = x;
+                    let checkY = y;
+
+                    switch (dir) {
+                        case 'up': checkY += i * gridSize; break;
+                        case 'down': checkY -= i * gridSize; break;
+                        case 'left': checkX += i * gridSize; break;
+                        case 'right': checkX -= i * gridSize; break;
+                    }
+
+                    // Check if position is valid
+                    if (checkX < 0 || checkX >= canvasWidth ||
+                        checkY < 0 || checkY >= canvasHeight ||
+                        isPositionOnObstacle(checkX, checkY) ||
+                        isPositionOnSnake(checkX, checkY)) {
+                        validDirection = false;
+                        break;
+                    }
+                }
+
+                if (validDirection) {
+                    return { x, y, direction: dir };
+                }
+            }
+        }
+    }
+
+    return null;
 }
