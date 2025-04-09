@@ -97,6 +97,26 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    // Setup large obstacles toggle
+    const largeObstaclesToggle = document.getElementById('largeObstaclesToggle');
+    if (largeObstaclesToggle) {
+        largeObstaclesToggle.addEventListener('change', function() {
+            largeObstaclesEnabled = this.checked;
+            if (!gameInterval) {
+                // If game is not running, update UI immediately
+                if (obstaclesEnabled) {
+                    placeObstacles(10);
+                } else {
+                    obstacles = [];
+                }
+                updateCanvas();
+            }
+        });
+        
+        // Set initial value from HTML
+        largeObstaclesEnabled = largeObstaclesToggle.checked;
+    }
+
     // Setup food count slider
     const foodSlider = document.getElementById('foodCountSlider');
     const foodCountValue = document.getElementById('foodCountValue');
@@ -165,6 +185,12 @@ function updateSettingsFromUI() {
     const obstaclesToggle = document.getElementById('obstaclesToggle');
     if (obstaclesToggle) {
         obstaclesEnabled = obstaclesToggle.checked;
+    }
+
+    // Update large obstacles setting
+    const largeObstaclesToggle = document.getElementById('largeObstaclesToggle');
+    if (largeObstaclesToggle) {
+        largeObstaclesEnabled = largeObstaclesToggle.checked;
     }
 
     // Update food count setting

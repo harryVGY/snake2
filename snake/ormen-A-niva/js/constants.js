@@ -23,12 +23,13 @@ let initializing = true; // Flag to track if game is in initialization state
 let enemySnake = [];
 let enemyDirection = 'left';
 let enemyEnabled = true;
-let enemySpeed = 4; // Increased to 4 from 2, making it move half as fast
+let enemySpeed = 8;
 let enemyMoveCounter = 0;
 let enemyLength = 3; // Initial enemy length
 
 // Game settings
 let obstaclesEnabled = true;
+let largeObstaclesEnabled = false; // New setting for obstacle clusters
 let foodCount = 1;
 let speedIncreasePerFood = 5; // Speed increase per food item eaten
 let maxSpeed = 50; // Maximum speed (minimum delay)

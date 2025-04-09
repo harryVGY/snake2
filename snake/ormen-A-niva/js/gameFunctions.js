@@ -47,16 +47,16 @@ function gameLoop() {
     if (!isPaused) {
         // Process any queued moves first
         processQueuedMoves();
-        
+
         // Then update direction and move snake
         direction = nextDirection;
         moveSnake();
-        
+
         // Rest of game logic
         if (enemyEnabled && !initializing) {
             moveEnemySnake();
         }
-        
+
         updateCanvas();
     }
 }
@@ -91,7 +91,7 @@ function moveSnake() {
         return;
     }
 
-    // Add check for collision with enemy snake
+    // Check collision with enemy snake
     if (enemyEnabled && isPositionOnEnemySnake(head.x, head.y)) {
         gameOver('Hit enemy snake');
         return;
@@ -313,31 +313,6 @@ function processQueuedMoves() {
     }
 }
 
-// Visual feedback for queued moves
-function showMoveQueueIndicator() {
-    // Create a small div showing the move queue status
-    const indicator = document.createElement('div');
-    indicator.style.position = 'absolute';
-    indicator.style.top = '5px';
-    indicator.style.right = '5px';
-    indicator.style.backgroundColor = 'rgba(255,255,255,0.7)';
-    indicator.style.padding = '5px';
-    indicator.style.borderRadius = '50%';
-    indicator.style.width = '20px';
-    indicator.style.height = '20px';
-    indicator.style.textAlign = 'center';
-    indicator.style.lineHeight = '20px';
-    indicator.textContent = moveQueue.length;
-    indicator.style.zIndex = '100';
-
-    document.querySelector('.game-area').appendChild(indicator);
-
-    // Remove after a short time
-    setTimeout(() => {
-        indicator.remove();
-    }, 300);
-}
-
 // Function to handle pausing and resuming the game
 function togglePause() {
     isPaused = !isPaused;
@@ -381,7 +356,7 @@ function isPositionOnObstacle(x, y) {
 // FOOD MANAGEMENT
 //---------------------------------------------
 
-// Fix the placeFood function to ensure food is always added
+// Fix the placeFood function to ensure food is always added in accessible locations
 function placeFood() {
     // Clear existing food array
     food = [];
@@ -392,6 +367,7 @@ function placeFood() {
     let maxAttempts = 200; // Avoid infinite loops
     let attempts = 0;
 
+    // Try to place food with the accessibility check
     while (placedCount < foodCount && attempts < maxAttempts) {
         let newX, newY;
         let validPosition = false;
@@ -401,10 +377,11 @@ function placeFood() {
             newX = Math.floor(Math.random() * (canvasWidth / gridSize)) * gridSize;
             newY = Math.floor(Math.random() * (canvasHeight / gridSize)) * gridSize;
 
-            // Check if position doesn't overlap with snake, obstacles or other food
+            // Check if position is valid and accessible
             validPosition = !isPositionOnSnake(newX, newY) &&
                             !isPositionOnObstacle(newX, newY) &&
-                            !isPositionOnFood(newX, newY);
+                            !isPositionOnFood(newX, newY) &&
+                            hasEnoughOpenNeighbors(newX, newY, 2);
 
             posAttempts++;
         }
@@ -426,12 +403,12 @@ function placeFood() {
 
     // Emergency fallback if no food was placed
     if (food.length === 0) {
-        console.warn("Failed to place food normally, using emergency placement");
-        emergencyFoodPlacement();
+        console.warn("Failed to place food normally, using emergency placement with accessibility check");
+        emergencyFoodPlacementWithAccess();
     }
 }
 
-// Function to add just one food item
+// Function to add just one food item with accessibility check
 function addOneFood() {
     let newX, newY;
     let validPosition = false;
@@ -444,7 +421,8 @@ function addOneFood() {
         // Check if position doesn't overlap with snake, obstacles or other food
         validPosition = !isPositionOnSnake(newX, newY) &&
                         !isPositionOnObstacle(newX, newY) &&
-                        !isPositionOnFood(newX, newY);
+                        !isPositionOnFood(newX, newY) &&
+                        hasEnoughOpenNeighbors(newX, newY, 2); // New check for accessible spaces
 
         attempts++;
     }
@@ -455,15 +433,47 @@ function addOneFood() {
             y: newY,
             image: randomizeFruit()
         });
+        return true;
     }
+    return false;
 }
 
-// Add emergency food placement as a last resort
-function emergencyFoodPlacement() {
-    // Just place food anywhere that's not on an obstacle
+// Helper function to check if a position has enough open neighboring spaces
+function hasEnoughOpenNeighbors(x, y, minOpenSpaces) {
+    // Define the four adjacent positions (up, right, down, left)
+    const neighbors = [
+        { x: x, y: y - gridSize }, // up
+        { x: x + gridSize, y: y }, // right
+        { x: x, y: y + gridSize }, // down
+        { x: x - gridSize, y: y }  // left
+    ];
+    
+    // Count how many neighbors are open (not walls, obstacles, or occupied by snake)
+    let openCount = 0;
+    
+    for (const neighbor of neighbors) {
+        // Check if position is valid (within canvas and not occupied)
+        if (neighbor.x >= 0 && neighbor.x < canvasWidth && 
+            neighbor.y >= 0 && neighbor.y < canvasHeight && 
+            !isPositionOnObstacle(neighbor.x, neighbor.y) && 
+            !isPositionOnSnake(neighbor.x, neighbor.y)) {
+            openCount++;
+        }
+    }
+    
+    // Return true if there are at least minOpenSpaces open neighbors
+    return openCount >= minOpenSpaces;
+}
+
+// Updated emergency food placement to ensure accessibility
+function emergencyFoodPlacementWithAccess() {
+    // Try each position on the board
     for (let x = 0; x < canvasWidth; x += gridSize) {
         for (let y = 0; y < canvasHeight; y += gridSize) {
-            if (!isPositionOnObstacle(x, y) && !isPositionOnSnake(x, y)) {
+            if (!isPositionOnObstacle(x, y) && 
+                !isPositionOnSnake(x, y) &&
+                hasEnoughOpenNeighbors(x, y, 2)) {
+                
                 food.push({
                     x: x,
                     y: y,
@@ -473,15 +483,30 @@ function emergencyFoodPlacement() {
             }
         }
     }
+    
+    // Last resort: place food anywhere that's not an obstacle or snake
+    // This is only used if no position with 2+ open neighbors exists
+    for (let x = 0; x < canvasWidth; x += gridSize) {
+        for (let y = 0; y < canvasHeight; y += gridSize) {
+            if (!isPositionOnObstacle(x, y) && !isPositionOnSnake(x, y)) {
+                food.push({
+                    x: x,
+                    y: y,
+                    image: randomizeFruit()
+                });
+                return;
+            }
+        }
+    }
 }
 
 //---------------------------------------------
 // OBSTACLE MANAGEMENT
 //---------------------------------------------
 
-// Placerar hinder på banan (ej på ormen, maten eller andra hinder)
+// Place obstacles on the board
 function placeObstacles(count = 10) {
-    // Rensa befintliga hinder
+    // Clear existing obstacles
     obstacles = [];
 
     // Skip obstacle placement if disabled
@@ -489,50 +514,44 @@ function placeObstacles(count = 10) {
         return;
     }
 
-    // Define a safety zone in front of the snake
-    const safeZoneSize = 3; // Number of grid cells to keep clear
+    // Define safety zone in front of the snake
+    const safeZoneSize = 3;
     const safePositions = [];
-
-    // Get snake head position
     const head = snake[0];
 
-    // Add positions in front of the snake to safe zone
+    // Add positions in front of snake to safe zone
     for (let i = 1; i <= safeZoneSize; i++) {
-        // Safe position directly in front
-        safePositions.push({
-            x: head.x + (i * gridSize),
-            y: head.y
-        });
-
-        // Safe position above
-        safePositions.push({
-            x: head.x + (i * gridSize),
-            y: head.y - (i * gridSize)
-        });
-
-        // Safe position below
-        safePositions.push({
-            x: head.x + (i * gridSize),
-            y: head.y + (i * gridSize)
-        });
+        // Safe positions directly in front and diagonally
+        safePositions.push({ x: head.x + (i * gridSize), y: head.y });
+        safePositions.push({ x: head.x + (i * gridSize), y: head.y - (i * gridSize) });
+        safePositions.push({ x: head.x + (i * gridSize), y: head.y + (i * gridSize) });
     }
 
-    // Place new obstacles
+    if (largeObstaclesEnabled) {
+        // Place 5 clusters of 4 obstacles each
+        placeLargeObstacles(5, 4, safePositions);
+    } else {
+        // Place individual obstacles
+        placeIndividualObstacles(count, safePositions);
+    }
+}
+
+// Function to place individual obstacles
+function placeIndividualObstacles(count, safePositions) {
     for (let i = 0; i < count; i++) {
         let newX, newY;
         let validPosition = false;
-
-        // search for a valid position
         let attempts = 0;
+
         while (!validPosition && attempts < (canvasWidth * canvasHeight)/gridSize) {
             newX = Math.floor(Math.random() * (canvasWidth / gridSize)) * gridSize;
             newY = Math.floor(Math.random() * (canvasHeight / gridSize)) * gridSize;
 
-            // check if position doesn't overlap with snake, food, or other obstacles
+            // Check if position is valid
             validPosition = !isPositionOnSnake(newX, newY) &&
-                            !isPositionOnFood(newX, newY) &&
-                            !isPositionOnObstacle(newX, newY) &&
-                            !safePositions.some(pos => pos.x === newX && pos.y === newY);
+                           !isPositionOnFood(newX, newY) &&
+                           !isPositionOnObstacle(newX, newY) &&
+                           !safePositions.some(pos => pos.x === newX && pos.y === newY);
 
             attempts++;
         }
@@ -540,6 +559,76 @@ function placeObstacles(count = 10) {
         if (validPosition) {
             obstacles.push({ x: newX, y: newY });
         }
+    }
+}
+
+// Function to place clusters of obstacles
+function placeLargeObstacles(clusterCount, obstaclesPerCluster, safePositions) {
+    for (let c = 0; c < clusterCount; c++) {
+        // Try to find a valid position for the cluster
+        let clusterX, clusterY;
+        let validClusterPosition = false;
+        let clusterAttempts = 0;
+
+        while (!validClusterPosition && clusterAttempts < 100) {
+            clusterX = Math.floor(Math.random() * (canvasWidth / gridSize)) * gridSize;
+            clusterY = Math.floor(Math.random() * (canvasHeight / gridSize)) * gridSize;
+
+            // Check if center position is valid
+            validClusterPosition = !isPositionOnSnake(clusterX, clusterY) &&
+                                  !isPositionOnFood(clusterX, clusterY) &&
+                                  !isPositionOnObstacle(clusterX, clusterY) &&
+                                  !safePositions.some(pos => pos.x === clusterX && pos.y === clusterY);
+
+            clusterAttempts++;
+        }
+
+        if (validClusterPosition) {
+            // Add the center obstacle
+            obstacles.push({ x: clusterX, y: clusterY });
+
+            // Add surrounding obstacles to form a cluster
+            const clusterPositions = [
+                { x: clusterX + gridSize, y: clusterY },
+                { x: clusterX - gridSize, y: clusterY },
+                { x: clusterX, y: clusterY + gridSize },
+                { x: clusterX, y: clusterY - gridSize },
+                { x: clusterX + gridSize, y: clusterY + gridSize },
+                { x: clusterX - gridSize, y: clusterY - gridSize },
+                { x: clusterX + gridSize, y: clusterY - gridSize },
+                { x: clusterX - gridSize, y: clusterY + gridSize }
+            ];
+
+            // Shuffle the positions for random selection
+            shuffleArray(clusterPositions);
+
+            // Try to add obstacles from the shuffled positions
+            let obstaclesAdded = 1; // We've already added the center
+
+            for (let i = 0; i < clusterPositions.length && obstaclesAdded < obstaclesPerCluster; i++) {
+                const pos = clusterPositions[i];
+
+                // Check if position is valid and on the board
+                if (pos.x >= 0 && pos.x < canvasWidth &&
+                    pos.y >= 0 && pos.y < canvasHeight &&
+                    !isPositionOnSnake(pos.x, pos.y) &&
+                    !isPositionOnFood(pos.x, pos.y) &&
+                    !isPositionOnObstacle(pos.x, pos.y) &&
+                    !safePositions.some(safePos => safePos.x === pos.x && safePos.y === pos.y)) {
+
+                    obstacles.push({ x: pos.x, y: pos.y });
+                    obstaclesAdded++;
+                }
+            }
+        }
+    }
+}
+
+// Utility function to shuffle an array (Fisher-Yates algorithm)
+function shuffleArray(array) {
+    for (let i = array.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [array[i], array[j]] = [array[j], array[i]]; // Swap elements
     }
 }
 
@@ -1049,10 +1138,17 @@ function moveEnemySnake() {
         }
     }
 
-    // Check for collision with self or player's snake
-    if (isPositionOnEnemySnake(head.x, head.y) || isPositionOnSnake(head.x, head.y)) {
-        // If collision, reposition enemy snake
+    // Check for collision with self
+    if (isPositionOnEnemySnake(head.x, head.y)) {
+        // If collision with self, reposition enemy snake
         repositionEnemySnake();
+        return;
+    }
+
+    // Check for collision with player's snake - THIS IS THE KEY CHANGE
+    if (isPositionOnSnake(head.x, head.y)) {
+        // End the game if enemy collides with player
+        gameOver('Player caught by enemy snake');
         return;
     }
 
