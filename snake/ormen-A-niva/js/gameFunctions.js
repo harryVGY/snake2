@@ -253,16 +253,11 @@ function changeDirection(event) {
             }
             break;
     }
-
-    // Play turn sound
-    gameSounds.turn.play();
 }
 
-// Update the move queue system with a cleaner implementation
 const MAX_QUEUE_SIZE = 3; // Limit queue to last 3 moves
 
 // Add move to the queue (for fast moves)
-//buggy ahhh
 function queueMove(dir) {
     // Don't allow 180-degree turns (moving directly back)
     if ((dir === 'up' && direction === 'down') ||
@@ -387,13 +382,22 @@ function placeFood() {
         }
 
         if (validPosition) {
-            const fruitImg = randomizeFruit();
-            food.push({
+            const newFood = {
                 x: newX,
                 y: newY,
-                image: fruitImg
-            });
+                image: randomizeFruit(),
+                createdAt: Date.now()
+            };
+            
+            food.push(newFood);
             placedCount++;
+            
+            // If fruit disappearing is enabled, set a timer for this food item
+            if (fruitDisappearEnabled) {
+                setTimeout(() => {
+                    startFoodFadeOut(newFood);
+                }, fruitDisappearTime);
+            }
         }
 
         attempts++;
@@ -428,14 +432,64 @@ function addOneFood() {
     }
 
     if (validPosition) {
-        food.push({
+        const newFood = {
             x: newX,
             y: newY,
-            image: randomizeFruit()
-        });
+            image: randomizeFruit(),
+            createdAt: Date.now()
+        };
+        
+        food.push(newFood);
+        
+        // If fruit disappearing is enabled, set a timer for this food item
+        if (fruitDisappearEnabled) {
+            setTimeout(() => {
+                startFoodFadeOut(newFood);
+            }, fruitDisappearTime);
+        }
+        
         return true;
     }
     return false;
+}
+
+// Start fade-out animation for a food item
+function startFoodFadeOut(foodItem) {
+    // Find if the food item still exists
+    const foodIndex = food.findIndex(item => 
+        item.x === foodItem.x && 
+        item.y === foodItem.y && 
+        item.createdAt === foodItem.createdAt
+    );
+    
+    if (foodIndex >= 0) {
+        // Mark the food as fading
+        food[foodIndex].isFading = true;
+        food[foodIndex].fadeStart = Date.now();
+        
+        // Remove the food after animation completes
+        setTimeout(() => {
+            removeFood(food[foodIndex]);
+        }, 500); // 500ms for fade animation
+    }
+}
+
+// Remove food from the game
+function removeFood(foodItem) {
+    const foodIndex = food.findIndex(item => 
+        item.x === foodItem.x && 
+        item.y === foodItem.y && 
+        item.createdAt === foodItem.createdAt
+    );
+    
+    if (foodIndex >= 0) {
+        food.splice(foodIndex, 1);
+        
+        // If no food left, add new food
+        if (food.length < foodCount) {
+            addOneFood();
+        }
+    }
 }
 
 // Helper function to check if a position has enough open neighboring spaces
@@ -447,20 +501,20 @@ function hasEnoughOpenNeighbors(x, y, minOpenSpaces) {
         { x: x, y: y + gridSize }, // down
         { x: x - gridSize, y: y }  // left
     ];
-    
+
     // Count how many neighbors are open (not walls, obstacles, or occupied by snake)
     let openCount = 0;
-    
+
     for (const neighbor of neighbors) {
         // Check if position is valid (within canvas and not occupied)
-        if (neighbor.x >= 0 && neighbor.x < canvasWidth && 
-            neighbor.y >= 0 && neighbor.y < canvasHeight && 
-            !isPositionOnObstacle(neighbor.x, neighbor.y) && 
+        if (neighbor.x >= 0 && neighbor.x < canvasWidth &&
+            neighbor.y >= 0 && neighbor.y < canvasHeight &&
+            !isPositionOnObstacle(neighbor.x, neighbor.y) &&
             !isPositionOnSnake(neighbor.x, neighbor.y)) {
             openCount++;
         }
     }
-    
+
     // Return true if there are at least minOpenSpaces open neighbors
     return openCount >= minOpenSpaces;
 }
@@ -470,30 +524,52 @@ function emergencyFoodPlacementWithAccess() {
     // Try each position on the board
     for (let x = 0; x < canvasWidth; x += gridSize) {
         for (let y = 0; y < canvasHeight; y += gridSize) {
-            if (!isPositionOnObstacle(x, y) && 
+            if (!isPositionOnObstacle(x, y) &&
                 !isPositionOnSnake(x, y) &&
                 hasEnoughOpenNeighbors(x, y, 2)) {
-                
-                food.push({
+
+                const newFood = {
                     x: x,
                     y: y,
-                    image: randomizeFruit()
-                });
+                    image: randomizeFruit(),
+                    createdAt: Date.now()
+                };
+                
+                food.push(newFood);
+                
+                // If fruit disappearing is enabled, set a timer for this food item
+                if (fruitDisappearEnabled) {
+                    setTimeout(() => {
+                        startFoodFadeOut(newFood);
+                    }, fruitDisappearTime);
+                }
+                
                 return; // Just need one piece of food
             }
         }
     }
-    
+
     // Last resort: place food anywhere that's not an obstacle or snake
     // This is only used if no position with 2+ open neighbors exists
     for (let x = 0; x < canvasWidth; x += gridSize) {
         for (let y = 0; y < canvasHeight; y += gridSize) {
             if (!isPositionOnObstacle(x, y) && !isPositionOnSnake(x, y)) {
-                food.push({
+                const newFood = {
                     x: x,
                     y: y,
-                    image: randomizeFruit()
-                });
+                    image: randomizeFruit(),
+                    createdAt: Date.now()
+                };
+                
+                food.push(newFood);
+                
+                // If fruit disappearing is enabled, set a timer for this food item
+                if (fruitDisappearEnabled) {
+                    setTimeout(() => {
+                        startFoodFadeOut(newFood);
+                    }, fruitDisappearTime);
+                }
+                
                 return;
             }
         }
@@ -522,14 +598,17 @@ function placeObstacles(count = 10) {
     // Add positions in front of snake to safe zone
     for (let i = 1; i <= safeZoneSize; i++) {
         // Safe positions directly in front and diagonally
+        // i is the amount of grids in front of the snake
         safePositions.push({ x: head.x + (i * gridSize), y: head.y });
         safePositions.push({ x: head.x + (i * gridSize), y: head.y - (i * gridSize) });
         safePositions.push({ x: head.x + (i * gridSize), y: head.y + (i * gridSize) });
     }
 
     if (largeObstaclesEnabled) {
-        // Place 5 clusters of 4 obstacles each
-        placeLargeObstacles(5, 4, safePositions);
+        // Place clusters of obstacles
+        x= 5; // amount of clusters
+        y= 4; // amount of obstacles in each cluster
+        placeLargeObstacles(x, y, safePositions);
     } else {
         // Place individual obstacles
         placeIndividualObstacles(count, safePositions);
@@ -633,283 +712,6 @@ function shuffleArray(array) {
 }
 
 //---------------------------------------------
-// RENDERING
-//---------------------------------------------
-
-// Updates the canvas with current game state
-function updateCanvas() {
-    ctx.clearRect(0, 0, canvasWidth, canvasHeight);
-    drawgrid();
-    drawObstacles();
-
-    // Draw enemy before player so player appears on top
-    if (enemyEnabled) {
-        drawEnemySnake();
-    }
-
-    drawSnake();
-    drawFood();
-    document.getElementById('score').innerText = `Score: ${score}`;
-}
-
-// Draw transparent start overlay with instructions
-function drawStartOverlay() {
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
-    ctx.fillRect(0, 0, canvasWidth, canvasHeight);
-    ctx.fillStyle = 'white';
-    ctx.font = '30px Arial';
-    ctx.textAlign = 'center';
-    ctx.fillText('Snake Game', canvasWidth/2, canvasHeight/3);
-    ctx.font = '16px Arial';
-    ctx.fillText('Press any direction key to start', canvasWidth/2, canvasHeight/2);
-    ctx.fillText('Use arrow keys or WASD to control', canvasWidth/2, canvasHeight/2 + 30);
-    ctx.fillText('Space to pause/resume', canvasWidth/2, canvasHeight/2 + 60);
-}
-
-// Draw pause message
-function drawPauseOverlay() {
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
-    ctx.fillRect(0, 0, canvasWidth, canvasHeight);
-    ctx.fillStyle = 'white';
-    ctx.font = '30px Arial';
-    ctx.textAlign = 'center';
-    ctx.fillText('Game Paused', canvasWidth / 2, canvasHeight / 2);
-}
-
-// Replace the drawgrid function with this checkered background version
-function drawgrid() {
-    // colors for checkered pattern
-    const color1 = '#E6E6FA'; // Lavender
-    const color2 = '#cccce2'; // MediumPurple
-
-    // Draw the checkered background
-    for (let x = 0; x < canvasWidth; x += gridSize) {
-        for (let y = 0; y < canvasHeight; y += gridSize) {
-            // Alternate colors based on position
-            ctx.fillStyle = (x/gridSize + y/gridSize) % 2 === 0 ? color1 : color2;
-            ctx.fillRect(x, y, gridSize, gridSize);
-        }
-    }
-
-    // Optional: Draw grid lines for better visibility
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.2)';  // Transparent white
-    for (let i = 0; i < canvasWidth; i += gridSize) {
-        ctx.fillRect(i, 0, 1, canvasHeight);
-    }
-    for (let i = 0; i < canvasHeight; i += gridSize) {
-        ctx.fillRect(0, i, canvasWidth, 1);
-    }
-}
-
-// Ritar ormen med bilder för kroppen och färg för huvud/svans
-function drawSnake() {
-    snake.forEach((segment, index) => {
-        if (index === 0) {
-            // Head - draw with image if available
-            if (typeof snakeHeadImage !== 'undefined' &&
-                snakeHeadImage.complete &&
-                snakeHeadImage.naturalWidth !== 0) {
-
-                ctx.save();
-                ctx.translate(segment.x + gridSize / 2, segment.y + gridSize / 2);
-
-                // Rotate head based on direction
-                let angle = 0;
-                switch (direction) {
-                    case 'up': angle = -Math.PI/2; break;
-                    case 'down': angle = Math.PI/2; break;
-                    case 'left': angle = Math.PI; break;
-                    case 'right': angle = 0; break;
-                }
-
-                ctx.rotate(angle);
-                ctx.drawImage(
-                    snakeHeadImage,
-                    -gridSize / 2,
-                    -gridSize / 2,
-                    gridSize,
-                    gridSize
-                );
-                ctx.restore();
-            } else {
-                // Fallback to colored square
-                ctx.fillStyle = 'darkgreen';
-                ctx.fillRect(segment.x, segment.y, gridSize, gridSize);
-            }
-        }
-        else if (index === snake.length - 1) {
-            // Tail - draw as green rectangle
-            ctx.fillStyle = 'green';
-            ctx.fillRect(segment.x, segment.y, gridSize, gridSize);
-        }
-        else {
-            // Body segments
-            drawBodySegment(segment, index);
-        }
-    });
-}
-
-function drawBodySegment(segment, index) {
-    // Get previous and next segments to determine rotation
-    const prev = snake[index - 1];
-    const next = snake[index + 1];
-
-    // If there's no previous or next (e.g. very short snake), just draw a square
-    if (!prev || !next) {
-        ctx.fillStyle = 'green';
-        ctx.fillRect(segment.x, segment.y, gridSize, gridSize);
-        return;
-    }
-
-    // Check if snake_body image is loaded
-    if (typeof snakeBodyImage !== 'undefined' &&
-        snakeBodyImage.complete &&
-        snakeBodyImage.naturalWidth !== 0)
-    {
-        ctx.save();
-
-        // Move to the center of the segment (so rotations are correctly)
-        ctx.translate(segment.x + gridSize / 2, segment.y + gridSize / 2);
-
-        let angle = 0;
-
-        // Calculate direction vectors
-        const prevToCurrent = {
-            x: segment.x - prev.x,
-            y: segment.y - prev.y
-        };
-        const currentToNext = {
-            x: next.x - segment.x,
-            y: next.y - segment.y
-        };
-
-        // 1) If snake is moving straight horizontally
-        if (prevToCurrent.x !== 0 && currentToNext.x !== 0) {
-            // Horizontal
-            angle = 0;
-        }
-        // 2) If snake is moving straight vertically
-        else if (prevToCurrent.y !== 0 && currentToNext.y !== 0) {
-            // Vertical
-            angle = Math.PI / 2;
-        }
-        // 3) Otherwise, the snake is turning
-        else {
-            // up->right OR left->down
-            if ((prevToCurrent.y < 0 && currentToNext.x > 0) ||
-                (prevToCurrent.x < 0 && currentToNext.y > 0)) {
-                angle = 0;
-            }
-            // up->left OR right->down
-            else if ((prevToCurrent.y < 0 && currentToNext.x < 0) ||
-                     (prevToCurrent.x > 0 && currentToNext.y > 0)) {
-                angle = Math.PI / 2;  // 90°
-            }
-            // down->right OR left->up
-            else if ((prevToCurrent.y > 0 && currentToNext.x > 0) ||
-                     (prevToCurrent.x < 0 && currentToNext.y < 0)) {
-                angle = -Math.PI / 2; // -90°
-            }
-            // down->left OR right->up
-            else if ((prevToCurrent.y > 0 && currentToNext.x < 0) ||
-                     (prevToCurrent.x > 0 && currentToNext.y < 0)) {
-                angle = Math.PI;      // 180°
-            }
-        }
-
-        // Rotate the canvas for the segment
-        ctx.rotate(angle);
-
-        // Draw the body image so it fits exactly in the grid
-        ctx.drawImage(
-            snakeBodyImage,
-            -gridSize / 2,
-            -gridSize / 2,
-            gridSize,
-            gridSize
-        );
-
-        // Restore the canvas state
-        ctx.restore();
-    } else {
-        // Fallback if the image isn't loaded: just draw a green square
-        ctx.fillStyle = 'green';
-        ctx.fillRect(segment.x, segment.y, gridSize, gridSize);
-
-        // A small lighter square inside, for a bit of "texture"
-        ctx.fillStyle = 'lightgreen';
-        ctx.fillRect(
-            segment.x + gridSize / 4,
-            segment.y + gridSize / 4,
-            gridSize / 2,
-            gridSize / 2
-        );
-    }
-}
-
-// Update the food drawing function
-function drawFood() {
-    try {
-        // Debug - show how many food items we're drawing
-        console.log("Drawing food items:", food.length);
-
-        if (food.length === 0) {
-            // Ensure we always have at least some food
-            console.warn("No food to draw, adding emergency food");
-            addOneFood();
-        }
-
-        food.forEach(item => {
-            if (item.image && item.image.complete && item.image.naturalWidth !== 0) {
-                ctx.drawImage(item.image, item.x, item.y, gridSize, gridSize);
-            } else {
-                // Improved fallback - more noticeable food item
-                ctx.fillStyle = 'red';
-                ctx.fillRect(item.x, item.y, gridSize, gridSize);
-
-                // Add a yellow center dot
-                ctx.fillStyle = 'yellow';
-                ctx.beginPath();
-                ctx.arc(
-                    item.x + gridSize/2,
-                    item.y + gridSize/2,
-                    gridSize/4,
-                    0,
-                    Math.PI * 2
-                );
-                ctx.fill();
-            }
-        });
-    } catch (error) {
-        console.error("Error drawing food:", error);
-    }
-}
-
-//draw obstacles on the canvas, one grid big.
-function drawObstacles() {
-    ctx.fillStyle = '#8B4513'; // Brun färg för hinder
-    obstacles.forEach(obstacle => {
-        ctx.fillRect(obstacle.x, obstacle.y, gridSize, gridSize);
-
-        //draw texture
-        ctx.strokeStyle = '#663300';
-        ctx.lineWidth = 1;
-        ctx.strokeRect(obstacle.x, obstacle.y, gridSize, gridSize);
-
-        //draw texture
-        ctx.beginPath();
-        ctx.moveTo(obstacle.x, obstacle.y);
-        ctx.lineTo(obstacle.x + gridSize, obstacle.y + gridSize);
-        ctx.stroke();
-
-        ctx.beginPath();
-        ctx.moveTo(obstacle.x + gridSize, obstacle.y);
-        ctx.lineTo(obstacle.x, obstacle.y + gridSize);
-        ctx.stroke();
-    });
-}
-
-//---------------------------------------------
 // GAME STATE HANDLERS
 //---------------------------------------------
 
@@ -943,9 +745,6 @@ function winGame() {
     // Show the message div
     messageDiv.style.display = 'block';
 
-    // Play win sound
-    gameSounds.win.play();
-
     // Update button states
     document.getElementById('startBtn').innerText = 'Start';
     document.getElementById('pauseBtn').disabled = true;
@@ -954,6 +753,12 @@ function winGame() {
     // Reset pause state
     if (typeof isPaused !== 'undefined') {
         isPaused = false;
+    }
+
+    // Add score to high scores
+    const isNewTopScore = addHighScore(snake.length);
+    if (isNewTopScore) {
+        alert('New High Score!');
     }
 }
 
@@ -984,6 +789,9 @@ function gameOver(reason = '') {
     if (typeof isPaused !== 'undefined') {
         isPaused = false;
     }
+
+    // Add score to high scores
+    addHighScore(score);
 }
 
 //---------------------------------------------
@@ -1026,58 +834,6 @@ function initEnemySnake() {
 
     // Reset enemy direction
     enemyDirection = 'left';
-}
-
-// Draw the enemy snake (red color)
-function drawEnemySnake() {
-    if (!enemyEnabled) return;
-
-    enemySnake.forEach((segment, index) => {
-        // Use red for enemy snake head, lighter red for body
-        ctx.fillStyle = index === 0 ? '#8B0000' : '#FF4500';
-        ctx.fillRect(segment.x, segment.y, gridSize, gridSize);
-
-        // Add texture/pattern to make it distinct from player
-        if (index === 0) {
-            // Draw eyes for head
-            ctx.fillStyle = 'white';
-
-            // Position eyes based on direction
-            let leftEyeX, leftEyeY, rightEyeX, rightEyeY;
-            const eyeSize = gridSize / 5;
-            const eyeOffset = gridSize / 3;
-
-            switch(enemyDirection) {
-                case 'up':
-                    leftEyeX = segment.x + eyeOffset;
-                    leftEyeY = segment.y + eyeOffset;
-                    rightEyeX = segment.x + gridSize - eyeOffset - eyeSize;
-                    rightEyeY = segment.y + eyeOffset;
-                    break;
-                case 'down':
-                    leftEyeX = segment.x + eyeOffset;
-                    leftEyeY = segment.y + gridSize - eyeOffset - eyeSize;
-                    rightEyeX = segment.x + gridSize - eyeOffset - eyeSize;
-                    rightEyeY = segment.y + gridSize - eyeOffset - eyeSize;
-                    break;
-                case 'left':
-                    leftEyeX = segment.x + eyeOffset;
-                    leftEyeY = segment.y + eyeOffset;
-                    rightEyeX = segment.x + eyeOffset;
-                    rightEyeY = segment.y + gridSize - eyeOffset - eyeSize;
-                    break;
-                case 'right':
-                    leftEyeX = segment.x + gridSize - eyeOffset - eyeSize;
-                    leftEyeY = segment.y + eyeOffset;
-                    rightEyeX = segment.x + gridSize - eyeOffset - eyeSize;
-                    rightEyeY = segment.y + gridSize - eyeOffset - eyeSize;
-                    break;
-            }
-
-            ctx.fillRect(leftEyeX, leftEyeY, eyeSize, eyeSize);
-            ctx.fillRect(rightEyeX, rightEyeY, eyeSize, eyeSize);
-        }
-    });
 }
 
 // Move the enemy snake to chase the player
@@ -1345,4 +1101,195 @@ function findSafeSpotForEnemy() {
     }
 
     return null;
+}
+
+//---------------------------------------------
+// HIGH SCORE MANAGEMENT
+//---------------------------------------------
+
+// Initialize high scores from localStorage or use default empty array
+function initHighScores() {
+    const storedScores = localStorage.getItem('snakeHighScores');
+    if (storedScores) {
+        highScores = JSON.parse(storedScores);
+    } else {
+        highScores = [];
+    }
+    updateHighScoreDisplay();
+}
+
+// Show high score notification when player achieves a new high score
+function showHighScoreNotification(score, rank) {
+    // Remove any existing notifications
+    const existingToast = document.querySelector('.high-score-toast');
+    if (existingToast) {
+        existingToast.remove();
+    }
+    
+    // Create the notification element
+    const toast = document.createElement('div');
+    toast.className = 'high-score-toast';
+    
+    // Create the content
+    let message = '';
+    if (rank === 1) {
+        message = `<h4>🏆 NEW TOP SCORE!</h4><p>Amazing! You achieved the highest score ever: ${score}!</p>`;
+    } else {
+        message = `<h4>🎯 NEW HIGH SCORE!</h4><p>Great job! Your score of ${score} ranks #${rank} on the leaderboard!</p>`;
+    }
+    
+    toast.innerHTML = message;
+    
+    // Add to the DOM
+    document.body.appendChild(toast);
+    
+    // Trigger the animation
+    setTimeout(() => {
+        toast.classList.add('show');
+    }, 100);
+    
+    // Remove the notification after 5 seconds
+    setTimeout(() => {
+        toast.classList.remove('show');
+        setTimeout(() => {
+            toast.remove();
+        }, 300);
+    }, 5000);
+}
+
+// Enhanced function to add high scores with visual feedback
+function addHighScore(newScore) {
+    // Ensure the score is a number
+    newScore = parseInt(newScore, 10);
+
+    // Load existing scores
+    if (highScores.length === 0) {
+        initHighScores();
+    }
+
+    // Find position for new score
+    let position = highScores.length;
+    for (let i = 0; i < highScores.length; i++) {
+        if (newScore > highScores[i]) {
+            position = i;
+            break;
+        }
+    }
+
+    // Only add if it's a high score or we have fewer than MAX_HIGH_SCORES
+    if (position < MAX_HIGH_SCORES) {
+        // Insert the new score at the right position
+        highScores.splice(position, 0, newScore);
+
+        // Trim to keep only the top scores
+        if (highScores.length > MAX_HIGH_SCORES) {
+            highScores.pop();
+        }
+
+        // Save to localStorage
+        saveHighScores();
+
+        // Update the display
+        updateHighScoreDisplay();
+
+        // Show the high score notification with fanfare
+        showHighScoreNotification(newScore, position + 1);
+
+        return position + 1; // Return the rank (1-based)
+    }
+
+    return 0; // Not a high score
+}
+
+// Function to save high scores to localStorage
+function saveHighScores() {
+    try {
+        localStorage.setItem(HIGH_SCORES_KEY, JSON.stringify(highScores));
+        console.log('High scores saved successfully');
+    } catch (error) {
+        console.error('Failed to save high scores:', error);
+    }
+}
+
+// Enhanced high score display with better visuals
+function updateHighScoreDisplay() {
+    const highScoresList = document.getElementById('highScoresList');
+    if (!highScoresList) return;
+    
+    // Clear the list
+    highScoresList.innerHTML = '';
+    
+    // No scores yet
+    if (highScores.length === 0) {
+        const emptyItem = document.createElement('li');
+        emptyItem.textContent = 'No high scores yet. Be the first!';
+        emptyItem.className = 'text-center text-muted';
+        highScoresList.appendChild(emptyItem);
+        return;
+    }
+    
+    // Add each score with rank styling
+    highScores.forEach((score, index) => {
+        const item = document.createElement('li');
+        
+        // Create rank indicator
+        const rankSpan = document.createElement('span');
+        rankSpan.className = `high-score-rank rank-${index + 1 <= 3 ? index + 1 : 'other'}`;
+        rankSpan.textContent = index + 1;
+        
+        // Create score text
+        const scoreSpan = document.createElement('span');
+        scoreSpan.textContent = score;
+        
+        // Add to list item
+        item.appendChild(rankSpan);
+        item.appendChild(document.createTextNode(' '));
+        item.appendChild(scoreSpan);
+        
+        // Highlight if it's the current game's score
+        if (score === currentGameScore) {
+            item.classList.add('new-high-score');
+            // Reset after animation completes
+            setTimeout(() => {
+                item.classList.remove('new-high-score');
+                currentGameScore = 0; // Reset the current game score reference
+            }, 1500);
+        }
+        
+        highScoresList.appendChild(item);
+    });
+}
+
+// Track current game score for highlighting
+let currentGameScore = 0;
+
+// Enhanced game over handling with high score focus
+function handleGameOver() {
+    clearInterval(gameInterval);
+    gameInterval = null;
+    
+    // Store the current score for highlighting
+    currentGameScore = score;
+    
+    // Display game over message
+    const gameMessage = document.getElementById('gameOverMessage');
+    
+    if (gameMessage) {
+        // Check if it's a high score
+        const rank = addHighScore(score);
+        
+        // Show appropriate message
+        if (rank === 1) {
+            gameMessage.querySelector('h2').textContent = 'NEW TOP SCORE!';
+            gameMessage.querySelector('p').innerHTML = `Amazing! You achieved the highest score ever: <strong>${score}</strong>!`;
+        } else if (rank > 0) {
+            gameMessage.querySelector('h2').textContent = 'GAME OVER';
+            gameMessage.querySelector('p').innerHTML = `Great job! Your score of <strong>${score}</strong> ranks #${rank} on the leaderboard!`;
+        } else {
+            gameMessage.querySelector('h2').textContent = 'GAME OVER';
+            gameMessage.querySelector('p').innerHTML = `Your final score: <strong>${score}</strong>`;
+        }
+        
+        gameMessage.style.display = 'block';
+    }
 }
