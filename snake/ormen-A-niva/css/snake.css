@@ -21,10 +21,21 @@
   --bronze-color: #cd7f32;
 }
 
+/* Add this to ensure all content is visible */
+html, body {
+    height: 100%;
+    overflow-x: hidden;
+    margin: 0;
+    padding: 0;
+}
+
 body {
+    padding-top: 10px;
+    min-height: 100vh;
     display: flex;
-    justify-content: center;
+    flex-direction: column;
     align-items: center;
+    justify-content: center;
     height: 100vh;
     margin: 0;
     background-color: var(--background-color);
@@ -33,17 +44,33 @@ body {
     background-image: linear-gradient(to bottom right, #f5f5f5, #e0f2f1);
 }
 
+/* Update game container layout */
 .game-container {
     display: flex;
-    flex-direction: row;
     justify-content: center;
     align-items: flex-start;
     gap: 20px;
-    max-width: 1000px;
+    max-width: 1400px; /* Increased max-width for larger screens */
     width: 100%;
+    margin: 20px auto; /* Add top margin to prevent content from disappearing */
+    padding: 0 20px;
+    flex-wrap: wrap; /* Allow wrapping on very small screens */
 }
 
+/* Add left panel styles */
+.left-panel {
+    min-width: 250px;
+    max-width: 300px;
+    flex-shrink: 0;
+    order: 1; /* Order for flex layout */
+}
+
+/* Update game area styles */
 .game-area {
+    flex: 1;
+    max-width: 600px;
+    min-width: 400px;
+    order: 2; /* Order for flex layout */
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -57,6 +84,74 @@ body {
 .game-area:hover {
     box-shadow: 0 12px 32px rgba(0, 0, 0, 0.18);
     transform: translateY(-2px);
+}
+
+/* Update right panel styles */
+.right-panel {
+    min-width: 250px;
+    max-width: 300px;
+    flex-shrink: 0;
+    order: 3; /* Order for flex layout */
+}
+
+/* Media query for larger screens */
+@media (min-width: 1200px) {
+    .game-container {
+        flex-wrap: nowrap;
+    }
+    
+    .game-area {
+        max-width: 800px;
+    }
+}
+
+/* Improve responsive behavior for very large screens */
+@media (min-width: 1400px) {
+    .game-container {
+        max-width: 1400px;
+    }
+    
+    .game-area {
+        max-width: 900px;
+    }
+    
+    .right-panel {
+        max-width: 350px;
+    }
+}
+
+/* Media query for smaller screens */
+@media (max-width: 900px) {
+    .game-container {
+        flex-direction: column;
+        align-items: center;
+    }
+    
+    .left-panel,
+    .right-panel,
+    .game-area {
+        min-width: 90%;
+        max-width: 500px;
+        width: 100%;
+    }
+    
+    /* Reorder elements for mobile */
+    .game-area {
+        order: 1;
+    }
+    
+    .left-panel {
+        order: 2;
+    }
+    
+    .right-panel {
+        order: 3;
+    }
+}
+
+/* Make sure high scores panel looks good */
+.high-score-panel {
+    height: 100%;
 }
 
 .settings-panel {
@@ -373,6 +468,7 @@ h2 {
     box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
     transition: all 0.3s ease;
     overflow: hidden;
+    height: 100%;
 }
 
 .high-score-panel:hover {

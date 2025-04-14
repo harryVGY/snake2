@@ -117,7 +117,7 @@ function drawSimpleTail(segment) {
     ctx.fillRect(segment.x + gridSize/4, segment.y + gridSize/4, gridSize/2, gridSize/2);
 }
 
-// Draw enhanced snake head with gradient and details
+// Draw snake head with gradient and details
 function drawSnakeHead(segment, index) {
     ctx.save();
 
@@ -209,7 +209,7 @@ function drawSnakeHead(segment, index) {
     ctx.restore();
 }
 
-// Draw enhanced snake body with connecting segments
+// Draw snake body with connecting segments
 function drawSnakeBodyEnhanced(segment, index, time) {
     ctx.save();
 
@@ -399,7 +399,7 @@ function drawBodyTurn(segment, turnDirection) {
     }
 }
 
-// Enhanced food drawing function with optimized performance
+// The drawFood function
 function drawFood() {
     try {
         if (food.length === 0) {
@@ -409,18 +409,13 @@ function drawFood() {
             return; // Return early since we just added food
         }
 
-        // Update global animation time once per frame - more efficient
+        // Update global animation time once per frame
         animationTime = Date.now();
         
-        // Calculate a single global pulse value to use for all food items
-        // This is more efficient than calculating it for each item
-        const globalPulse = Math.sin(animationTime / ANIMATION_PULSE_SPEED) * 0.1 + 0.95;
-
-        // Remove any existing food timers from previous frame to prevent DOM overload
-        const existingTimers = document.querySelectorAll('.food-timer, .food-timer-ring');
-        existingTimers.forEach(timer => timer.remove());
-
-        // Process each food item
+        // Calculate a single global pulse value - more efficient
+        const globalPulse = Math.sin(animationTime / ANIMATION_PULSE_SPEED) * 0.08 + 0.95; // Reduced intensity
+        
+        // Process each food item with optimized rendering
         food.forEach(item => {
             // Skip drawing if the food is disappearing and animation complete
             if (item.isFading && item.fadeStart + fruitFadeTime < animationTime) {
@@ -440,26 +435,16 @@ function drawFood() {
             // Apply scale animation - use pre-calculated global pulse instead of per-item
             ctx.translate(item.x + gridSize/2, item.y + gridSize/2);
             
-            // Calculate time remaining if fruit disappear is enabled
-            if (fruitDisappearEnabled && !item.isFading && item.createdAt) {
-                const elapsedTime = animationTime - item.createdAt;
-                const timeRemaining = fruitDisappearTime - elapsedTime;
-                
-                // Only show timer and special effects when less than 3 seconds remain
-                if (timeRemaining < 3000 && timeRemaining > 0) {
-                    // Faster pulse as time runs out
-                    const warningPulse = Math.sin(animationTime / (100 + timeRemaining/30)) * 0.15 + 0.95;
-                    ctx.scale(warningPulse, warningPulse);
-                    
-                    // Only create DOM timer element when time is running out
-                    // This greatly reduces the number of DOM operations
-                    createFoodTimer(item, Math.ceil(timeRemaining / 1000));
-                } else {
-                    // Normal pulsing
-                    ctx.scale(globalPulse, globalPulse);
-                }
-            } else {
-                // Normal pulsing
+            // Only apply scaling when needed to improve performance
+            const timeRemaining = fruitDisappearEnabled ? (fruitDisappearTime - (animationTime - item.createdAt)) : Infinity;
+            
+            // Only apply pulse when fruit is about to disappear or just regular pulse
+            if (timeRemaining < 3000 && timeRemaining > 0) {
+                // Simple warning effect with less intensity
+                const scale = timeRemaining < 1000 ? globalPulse * 1.1 : globalPulse;
+                ctx.scale(scale, scale);
+            } else if (!item.isFading) {
+                // Standard pulse with reduced intensity for better performance
                 ctx.scale(globalPulse, globalPulse);
             }
             
@@ -468,72 +453,62 @@ function drawFood() {
                 ctx.globalAlpha = opacity;
             }
 
+            // Simplified drawing code
             if (item.image && item.image.complete && item.image.naturalWidth !== 0) {
-                // Draw shadow
-                ctx.shadowColor = 'rgba(0, 0, 0, 0.3)';
-                ctx.shadowBlur = 4;
-                ctx.shadowOffsetX = 2;
-                ctx.shadowOffsetY = 2;
+                // Reduce shadow effects for better performance
+                if (!item.isFading) {
+                    ctx.shadowColor = 'rgba(0, 0, 0, 0.2)';
+                    ctx.shadowBlur = 3;
+                    ctx.shadowOffsetX = 1;
+                    ctx.shadowOffsetY = 1;
+                }
 
                 // Draw the food image
-                ctx.drawImage(
-                    item.image,
-                    -gridSize/2,
-                    -gridSize/2,
-                    gridSize,
-                    gridSize
-                );
-
-                // Add a subtle highlight - for non-fading items only to improve performance
-                if (!item.isFading) {
-                    ctx.shadowColor = 'rgba(255, 255, 255, 0.5)';
-                    ctx.shadowBlur = 10;
-                    ctx.shadowOffsetX = -2;
-                    ctx.shadowOffsetY = -2;
-                    ctx.globalCompositeOperation = 'source-atop';
-                    ctx.fillStyle = 'rgba(255, 255, 255, 0.2)';
-                    ctx.fillRect(-gridSize/2, -gridSize/2, gridSize, gridSize);
-                }
+                ctx.drawImage(item.image, -gridSize/2, -gridSize/2, gridSize, gridSize);
             } else {
-                // Improved fallback with reusable gradients
-                if (!item.gradient) {
-                    item.gradient = ctx.createRadialGradient(0, 0, gridSize*0.1, 0, 0, gridSize*0.7);
-                    item.gradient.addColorStop(0, '#ff6b6b');
-                    item.gradient.addColorStop(1, '#c92a2a');
-                }
-
-                // Draw a circular shape with shadow
-                ctx.shadowColor = 'rgba(0, 0, 0, 0.3)';
-                ctx.shadowBlur = 5;
-                ctx.shadowOffsetX = 2;
-                ctx.shadowOffsetY = 2;
-
-                ctx.fillStyle = item.gradient;
+                // Simplified fallback with less gradient computation
+                ctx.fillStyle = item.colorFallback || 'red';
                 ctx.beginPath();
                 ctx.arc(0, 0, gridSize/2 * 0.8, 0, Math.PI * 2);
                 ctx.fill();
-
-                // Simple stem at the top
-                ctx.shadowColor = 'transparent';
-                ctx.fillStyle = '#2e7d32';
-                ctx.fillRect(-gridSize/10, -gridSize/2 * 0.8, gridSize/5, gridSize/6);
-
-                // Add highlight only for non-fading items
-                if (!item.isFading) {
-                    ctx.globalCompositeOperation = 'source-atop';
-                    ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
-                    ctx.beginPath();
-                    ctx.arc(-gridSize/6, -gridSize/6, gridSize/4, 0, Math.PI * 2);
-                    ctx.fill();
+                
+                // Cache this color to avoid recalculating
+                if (!item.colorFallback) {
+                    item.colorFallback = '#c92a2a';
                 }
             }
 
             // Restore the canvas state
             ctx.restore();
         });
+        
+        // Only update DOM timers every few frames instead of every frame
+        if (animationTime % 3 === 0 && fruitDisappearEnabled) {
+            updateFruitTimers();
+        }
     } catch (error) {
         console.error("Error drawing food:", error);
     }
+}
+
+// Function to update fruit timers less frequently
+function updateFruitTimers() {
+    // Remove existing timers first
+    const existingTimers = document.querySelectorAll('.food-timer, .food-timer-ring');
+    existingTimers.forEach(timer => timer.remove());
+    
+    // Only show timers for fruits that are close to disappearing
+    food.forEach(item => {
+        if (!item.isFading && item.createdAt) {
+            const elapsedTime = animationTime - item.createdAt;
+            const timeRemaining = fruitDisappearTime - elapsedTime;
+            
+            // Only create timers when less than 3 seconds remain
+            if (timeRemaining < 3000 && timeRemaining > 0) {
+                createFoodTimer(item, Math.ceil(timeRemaining / 1000));
+            }
+        }
+    });
 }
 
 // Create a visual timer for food that's about to disappear
@@ -577,7 +552,7 @@ function createFoodTimer(item, secondsRemaining) {
     document.body.appendChild(timer);
 }
 
-// Enhanced obstacle drawing with better textures and 3D effect
+// Draw obstacles with textures and 3D effect
 function drawObstacles() {
     obstacles.forEach(obstacle => {
         // Create wood-like gradient
@@ -654,7 +629,7 @@ function drawObstacles() {
     });
 }
 
-// Enhanced enemy snake drawing with better appearance
+// Draw enemy snake
 function drawEnemySnake() {
     if (!enemyEnabled) return;
 
@@ -676,7 +651,7 @@ function drawEnemySnake() {
     }
 }
 
-// Draw enhanced enemy head with details
+// Draw enemy head with details
 function drawEnemyHead(segment) {
     ctx.save();
 

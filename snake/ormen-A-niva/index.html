@@ -8,6 +8,21 @@
 </head>
 <body>
   <div class="game-container">
+    <div class="left-panel">
+      <!-- High Score Panel -->
+      <div class="high-score-panel card mb-3">
+        <div class="card-header bg-success text-white">
+          <h3 class="mb-0">High Scores</h3>
+        </div>
+        <div class="card-body">
+          <ul id="highScoresList" class="list-group list-group-flush">
+            <li class="list-group-item">No high scores yet!</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- Game area in the middle -->
     <div class="game-area">
       <div id="gameMessage" class="game-message"></div>
       <div id="score" class="display-1">Score: 0</div>
@@ -26,19 +41,8 @@
       </div>
     </div>
 
+    <!-- Right panel for settings -->
     <div class="right-panel">
-      <!-- High Score Panel -->
-      <div class="high-score-panel card mb-3">
-        <div class="card-header bg-success text-white">
-          <h3 class="mb-0">High Scores</h3>
-        </div>
-        <div class="card-body">
-          <ul id="highScoresList" class="list-group list-group-flush">
-            <li class="list-group-item">No high scores yet!</li>
-          </ul>
-        </div>
-      </div>
-
       <!-- Settings Panel -->
       <div id="settings" class="settings card p-3">
         <h2 class="mb-3">Settings</h2>
@@ -72,7 +76,7 @@
           <div class="custom-control custom-switch">
             <input type="checkbox" class="custom-control-input" id="fruitDisappearToggle" checked>
             <label class="custom-control-label" for="fruitDisappearToggle">Fruits Disappear Over Time</label>
-            <small class="form-text text-muted">Fruits will disappear after 8 seconds</small>
+            <small class="form-text text-muted">Fruits will disappear after 7 seconds</small>
           </div>
         </div>
 

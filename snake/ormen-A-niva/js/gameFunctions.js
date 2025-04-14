@@ -158,11 +158,11 @@ function increaseSpeed() {
     // Update speed display
     updateSpeedDisplay();
 
-    // Add visual feedback when speed increases
+    // Show visual feedback when speed increases
     showSpeedBoost();
 }
 
-//function to show current speed in game UI
+// Function to show current speed in game UI
 function updateSpeedDisplay() {
     const speedPercent = Math.floor(((baseGameSpeed - gameSpeed) / (baseGameSpeed - maxSpeed)) *100);
     document.getElementById('currentSpeed').textContent = `${speedPercent}`;
@@ -332,7 +332,7 @@ function togglePause() {
 // COLLISION DETECTION
 //---------------------------------------------
 
-// checks if the position is on the snake
+// Checks if the position is on the snake
 function isPositionOnSnake(x, y) {
     return snake.some(segment => segment.x === x && segment.y === y);
 }
@@ -342,7 +342,7 @@ function isPositionOnFood(x, y) {
     return food.some(item => item.x === x && item.y === y);
 }
 
-// Kontrollerar om en position ligger på ett hinder
+// Checks if a position is on an obstacle
 function isPositionOnObstacle(x, y) {
     return obstacles.some(obstacle => obstacle.x === x && obstacle.y === y);
 }
@@ -351,7 +351,7 @@ function isPositionOnObstacle(x, y) {
 // FOOD MANAGEMENT
 //---------------------------------------------
 
-// Fix the placeFood function to ensure food is always added in accessible locations
+// Place food in accessible locations
 function placeFood() {
     // Clear existing food array
     food = [];
@@ -426,7 +426,7 @@ function addOneFood() {
         validPosition = !isPositionOnSnake(newX, newY) &&
                         !isPositionOnObstacle(newX, newY) &&
                         !isPositionOnFood(newX, newY) &&
-                        hasEnoughOpenNeighbors(newX, newY, 2); // New check for accessible spaces
+                        hasEnoughOpenNeighbors(newX, newY, 2); // Check for accessible spaces
 
         attempts++;
     }
@@ -519,7 +519,7 @@ function hasEnoughOpenNeighbors(x, y, minOpenSpaces) {
     return openCount >= minOpenSpaces;
 }
 
-// Updated emergency food placement to ensure accessibility
+// Emergency food placement to ensure accessibility
 function emergencyFoodPlacementWithAccess() {
     // Try each position on the board
     for (let x = 0; x < canvasWidth; x += gridSize) {
@@ -735,7 +735,7 @@ function winGame() {
     gameInterval = null;
 
     const messageDiv = document.getElementById('gameMessage');
-    // you get the whole snake as points( by default that is 3 more then if you used score)
+    // You get the whole snake as points (by default that is 3 more than if you used score)
     messageDiv.innerHTML = `
         <h2 style="color: gold;">YOU WIN!</h2>
         <p>Congratulations! You filled the entire board!</p>
@@ -762,7 +762,7 @@ function winGame() {
     }
 }
 
-// Hanterar Game Over
+// Game Over handler
 function gameOver(reason = '') {
     clearInterval(gameInterval);
     gameInterval = null;
@@ -798,7 +798,7 @@ function gameOver(reason = '') {
 // UTILITY FUNCTIONS
 //---------------------------------------------
 
-// Add this helper function for determining segment type
+// Helper function for determining segment type
 function getSegmentType(prev, current, next) {
     if (!prev || !next) return 'straight';
 
@@ -901,7 +901,7 @@ function moveEnemySnake() {
         return;
     }
 
-    // Check for collision with player's snake - THIS IS THE KEY CHANGE
+    // Check for collision with player's snake
     if (isPositionOnSnake(head.x, head.y)) {
         // End the game if enemy collides with player
         gameOver('Player caught by enemy snake');
@@ -1157,7 +1157,7 @@ function showHighScoreNotification(score, rank) {
     }, 5000);
 }
 
-// Enhanced function to add high scores with visual feedback
+// Function to add high scores with visual feedback
 function addHighScore(newScore) {
     // Ensure the score is a number
     newScore = parseInt(newScore, 10);
@@ -1211,7 +1211,7 @@ function saveHighScores() {
     }
 }
 
-// Enhanced high score display with better visuals
+// High score display with visuals
 function updateHighScoreDisplay() {
     const highScoresList = document.getElementById('highScoresList');
     if (!highScoresList) return;
@@ -1263,7 +1263,7 @@ function updateHighScoreDisplay() {
 // Track current game score for highlighting
 let currentGameScore = 0;
 
-// Enhanced game over handling with high score focus
+// Game over handling with high score focus
 function handleGameOver() {
     clearInterval(gameInterval);
     gameInterval = null;

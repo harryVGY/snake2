@@ -1,16 +1,16 @@
-// load images for
+// Image loading for food
 const foodColors = ['red', 'yellow', 'purple', 'green'];
 
 // Snake body image
 const snakeBodyImage = new Image();
 snakeBodyImage.src = 'images/snake_body.png';
 
-// Add explicit error handler
+// Error handler
 snakeBodyImage.onerror = function() {
     console.log("Snake body image failed to load, will use fallback color");
 };
 
-// load snake head
+// Snake head image
 const snakeHeadImage = new Image();
 snakeHeadImage.src = 'images/snake_head.jpg';
 snakeHeadImage.onerror = function() {
@@ -33,11 +33,11 @@ function createFruitImages() {
 
     const images = [appleImage, bananaImage, blueberryImage, pearImage];
 
-    // Lägg till error handling
+    // Error handling
     images.forEach((img, index) => {
         img.onerror = function() {
             console.log(`Image ${img.src} failed to load, using color fallback`);
-            // create a colored square as a fallback
+            // Create a colored square as a fallback
             const canvas = document.createElement('canvas');
             canvas.width = 20;
             canvas.height = 20;
@@ -48,7 +48,7 @@ function createFruitImages() {
             tempCtx.lineWidth = 1;
             tempCtx.strokeRect(1, 1, 18, 18);
 
-            // replace the image with the colored square
+            // Replace the image with the colored square
             const newImg = new Image();
             newImg.src = canvas.toDataURL();
             images[index] = newImg;
