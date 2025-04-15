@@ -24,7 +24,7 @@ let isPaused = false; // Track pause state
 // FOOD-RELATED CONSTANTS
 let foodCount = 5;             // Amount of food on the board at once
 let fruitDisappearEnabled = true;  // Whether fruits disappear after a while
-let fruitDisappearTime = 7000;     // Time in ms before a fruit starts to disappear
+let fruitDisappearTime = 7_000;     // Time in ms before a fruit starts to disappear
 const fruitFadeTime = 500;           // Time for fade-out animation in ms
 
 // ANIMATION-RELATED CONSTANTS
